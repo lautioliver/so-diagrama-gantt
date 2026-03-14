@@ -10,9 +10,6 @@ function buildTable() {
   const n = parseInt($('num-procs').value) || 4;
   const isPriority = algoSel() === 'priority';
 
-  document.querySelectorAll('.priority-col').forEach(el => {
-    el.style.display = isPriority ? '' : 'none';
-  });
   $('quantum-field').style.display = algoSel() === 'rr' ? '' : 'none';
 
   const tbody = $('proc-tbody');
@@ -23,8 +20,8 @@ function buildTable() {
       <td class="pid-cell">P${i}</td>
       <td><input type="number" min="0" value="${i}" class="arr-input"></td>
       <td><input type="number" min="1" value="${Math.floor(Math.random() * 6) + 1}" class="burst-input"></td>
-      <td class="priority-col" style="display:${isPriority ? '' : 'none'}">
-        <input type="number" min="1" value="${i + 1}" class="prio-input">
+      <td class="priority-col">
+        <input type="number" min="1" value="${n - i}" class="prio-input" oninput="this.value = Math.max(1, parseInt(this.value)||1)">
       </td>
     `;
     tbody.appendChild(tr);
@@ -38,7 +35,7 @@ function getProcesses() {
     arrival:  parseInt(r.querySelector('.arr-input').value)   || 0,
     burst:    parseInt(r.querySelector('.burst-input').value) || 1,
     priority: r.querySelector('.prio-input')
-                ? parseInt(r.querySelector('.prio-input').value) || 1
+                ? Math.max(1, parseInt(r.querySelector('.prio-input').value) || 1)
                 : 1,
   }));
 }
@@ -50,7 +47,11 @@ function clearResults() {
 // ─── Algoritmos ────────────────────────────────────────────────────────────
 
 function runFCFS(procs, ctxTime) {
-  const sorted = [...procs].sort((a, b) => a.arrival - b.arrival);
+  // Orden principal: tiempo de llegada.
+  // Desempate (misma llegada): mayor prioridad primero, luego id original.
+  const sorted = [...procs].sort((a, b) =>
+    a.arrival - b.arrival || b.priority - a.priority || a.id - b.id
+  );
   return runNonPreemptive(sorted, ctxTime, 'FCFS — First Come First Served');
 }
 
@@ -68,7 +69,8 @@ function runSJF(procs, ctxTime) {
       log.push(`<span class="run-line">  t=${time}–${next}  [IDLE]</span>`);
       time = next; continue;
     }
-    avail.sort((a, b) => a.burst - b.burst || a.arrival - b.arrival);
+    // Criterio: menor ráfaga → mayor prioridad → menor llegada
+    avail.sort((a, b) => a.burst - b.burst || b.priority - a.priority || a.arrival - b.arrival);
     const p = avail[0];
     if (lastPid !== null && lastPid !== p.pid && ctxTime > 0) {
       timeline.push({ pid: 'ctx', start: time, end: time + ctxTime, type: 'ctx' });
@@ -77,7 +79,7 @@ function runSJF(procs, ctxTime) {
     }
     const end = time + p.burst;
     timeline.push({ pid: p.pid, start: time, end, type: 'run' });
-    log.push(`<span class="run-line">  t=${time}–${end}  [EJECUTANDO] ${p.pid}  ráfaga=${p.burst}ms</span>`);
+    log.push(`<span class="run-line">  t=${time}–${end}  [EJECUTANDO] ${p.pid}  ráfaga=${p.burst}ms  prioridad=${p.priority}</span>`);
     log.push(`<span class="end-line">  t=${end}  [FIN] ${p.pid}</span>`);
     p.done = true; lastPid = p.pid; time = end;
   }
@@ -94,11 +96,14 @@ function runRR(procs, ctxTime, quantum) {
   const readyQueue = [];
   const arrived = new Set();
 
-  const enqueue = t => queue.forEach(p => {
-    if (!arrived.has(p.id) && p.arrival <= t && !p.done) {
-      arrived.add(p.id); readyQueue.push(p);
-    }
-  });
+  const enqueue = t => {
+    // Recoger todos los que llegan en este instante (no encolados aún)
+    const newArrivals = queue.filter(p => !arrived.has(p.id) && p.arrival <= t && !p.done);
+    // Ordenar por prioridad descendente para que el de mayor prioridad
+    // quede primero dentro del lote de llegadas simultáneas
+    newArrivals.sort((a, b) => b.priority - a.priority || a.arrival - b.arrival || a.id - b.id);
+    newArrivals.forEach(p => { arrived.add(p.id); readyQueue.push(p); });
+  };
 
   enqueue(0);
   while (queue.some(p => !p.done)) {
@@ -118,7 +123,7 @@ function runRR(procs, ctxTime, quantum) {
     const slice = Math.min(quantum, p.rem);
     const end = time + slice;
     timeline.push({ pid: p.pid, start: time, end, type: 'run' });
-    log.push(`<span class="run-line">  t=${time}–${end}  [EJECUTANDO] ${p.pid}  slice=${slice}ms  rest=${p.rem - slice}ms</span>`);
+    log.push(`<span class="run-line">  t=${time}–${end}  [EJECUTANDO] ${p.pid}  slice=${slice}ms  rest=${p.rem - slice}ms  prioridad=${p.priority}</span>`);
     p.rem -= slice; lastPid = p.pid; time = end; enqueue(time);
     if (p.rem > 0) readyQueue.push(p);
     else { p.done = true; log.push(`<span class="end-line">  t=${end}  [FIN] ${p.pid}</span>`); }
@@ -130,7 +135,7 @@ function runPriority(procs, ctxTime) {
   const timeline = [], log = [];
   const rem = procs.map(p => ({ ...p, done: false }));
   let time = 0, lastPid = null;
-  log.push(`<span class="hdr">=== PRIORIDAD (No Preemptivo — número menor = mayor prioridad) ===</span>`);
+  log.push(`<span class="hdr">=== PRIORIDAD (No Preemptivo — número mayor = mayor prioridad) ===</span>`);
 
   while (rem.some(p => !p.done)) {
     const avail = rem.filter(p => !p.done && p.arrival <= time);
@@ -140,7 +145,7 @@ function runPriority(procs, ctxTime) {
       log.push(`<span class="run-line">  t=${time}–${next}  [IDLE]</span>`);
       time = next; continue;
     }
-    avail.sort((a, b) => a.priority - b.priority || a.arrival - b.arrival);
+    avail.sort((a, b) => b.priority - a.priority || a.arrival - b.arrival);  // mayor número = mayor prioridad
     const p = avail[0];
     if (lastPid !== null && lastPid !== p.pid && ctxTime > 0) {
       timeline.push({ pid: 'ctx', start: time, end: time + ctxTime, type: 'ctx' });
@@ -177,7 +182,7 @@ function runNonPreemptive(sorted, ctxTime, name) {
     }
     const end = time + next.burst;
     timeline.push({ pid: next.pid, start: time, end, type: 'run' });
-    log.push(`<span class="run-line">  t=${time}–${end}  [EJECUTANDO] ${next.pid}  ráfaga=${next.burst}ms</span>`);
+    log.push(`<span class="run-line">  t=${time}–${end}  [EJECUTANDO] ${next.pid}  ráfaga=${next.burst}ms  prioridad=${next.priority}</span>`);
     log.push(`<span class="end-line">  t=${end}  [FIN] ${next.pid}</span>`);
     next.done = true; lastPid = next.pid; time = end;
   }
@@ -219,7 +224,7 @@ function colorFor(pid) {
  * cada bloque se coloca con left = start*PX y width = (end-start)*PX
  * → nunca colapsa, sin importar la cantidad de procesos o tiempo total.
  */
-function renderGantt(timeline) {
+function renderGantt(timeline, procMap) {
   const total = Math.max(...timeline.map(b => b.end));
   // px por unidad de tiempo: mínimo 28px, máximo 80px
   const PX = Math.max(28, Math.min(80, Math.floor(1100 / total)));
@@ -246,7 +251,7 @@ function renderGantt(timeline) {
 
   // ── Fila CPU (todas las pistas) ──
   container.appendChild(
-    buildRow('CPU', timeline, null, PX, trackW, total, tickStep)
+    buildRow('CPU', timeline, null, PX, trackW, total, tickStep, procMap)
   );
 
   // Separador
@@ -258,7 +263,7 @@ function renderGantt(timeline) {
   const pids = [...new Set(timeline.filter(b => b.type === 'run').map(b => b.pid))];
   pids.forEach(pid => {
     container.appendChild(
-      buildRow(pid, timeline, pid, PX, trackW, total, tickStep)
+      buildRow(pid, timeline, pid, PX, trackW, total, tickStep, procMap)
     );
   });
 
@@ -284,7 +289,7 @@ function addAxisTick(parent, t, PX) {
  * @param {number}      total     - tiempo total
  * @param {number}      tickStep  - paso entre ticks
  */
-function buildRow(label, timeline, filterPid, PX, trackW, total, tickStep) {
+function buildRow(label, timeline, filterPid, PX, trackW, total, tickStep, procMap = {}) {
   const row = document.createElement('div');
   row.className = 'gantt-row';
 
@@ -335,7 +340,10 @@ function buildRow(label, timeline, filterPid, PX, trackW, total, tickStep) {
       }
     }
 
-    block.title = `${b.pid}  [${b.start} → ${b.end}]  duración = ${b.end - b.start}ms`;
+    const procInfo = procMap[b.pid] || null;
+    block.title = b.type === 'run'
+      ? `${b.pid}  [${b.start} → ${b.end}]  duración=${b.end - b.start}ms  prioridad=${procInfo ? procInfo.priority : '-'}`
+      : `${b.pid}  [${b.start} → ${b.end}]  duración=${b.end - b.start}ms`;
 
     // ── Time-labels encima del bloque ──
     // Solo mostrar si el bloque es "relevante" (no idle de fila individual)
@@ -420,6 +428,7 @@ function renderResults(metrics) {
       <td class="pid-cell">${m.pid}</td>
       <td>${m.arrival}</td>
       <td>${m.burst}</td>
+      <td>${m.priority}</td>
       <td>${m.firstRun}</td>
       <td>${m.finish}</td>
       <td>${m.waitTime}</td>
@@ -469,13 +478,16 @@ function simulate() {
   log.push(`<span class="hdr">RESUMEN POR PROCESO</span>`);
   metrics.forEach(m => {
     log.push(
-      `<span class="end-line">  ${m.pid}  llegada=${m.arrival}  ráfaga=${m.burst}  ` +
+      `<span class="end-line">  ${m.pid}  llegada=${m.arrival}  ráfaga=${m.burst}  prioridad=${m.priority}  ` +
       `inicio=${m.firstRun}  fin=${m.finish}  espera=${m.waitTime}  ` +
       `retorno=${m.turnaround}  respuesta=${m.response}</span>`
     );
   });
 
-  renderGantt(timeline);
+  // mapa pid → proceso para tooltips y etiquetas
+  const procMap = {};
+  procs.forEach(p => { procMap[p.pid] = p; });
+  renderGantt(timeline, procMap);
   renderResults(metrics);
   renderMetrics(metrics, log);
   $('log-box').innerHTML = log.join('<br>');
