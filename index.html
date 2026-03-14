@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulador de Planificación de Procesos</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════
+     ENCABEZADO
+══════════════════════════════════════════════════ -->
+<header>
+  <span class="logo">Numerika<em>AI</em></span>
+  <h1>Simulador de Planificación</h1>
+</header>
+
+<div class="container">
+
+  <!-- ── PANEL: Configuración ── -->
+  <div class="panel">
+    <div class="panel-header">Configuración</div>
+    <div class="panel-body">
+      <div class="controls-row">
+
+        <div class="field">
+          <label>Nº Procesos</label>
+          <input type="number" id="num-procs" min="1" max="10" value="4">
+        </div>
+
+        <div class="field">
+          <label>Algoritmo</label>
+          <select id="algorithm">
+            <option value="fcfs">FCFS — First Come First Served</option>
+            <option value="sjf">SJF — Trabajo Corto Primero</option>
+            <option value="rr">RR — Turno Circular</option>
+            <option value="priority">Prioridad</option>
+          </select>
+        </div>
+
+        <div class="field" id="quantum-field">
+          <label>Quantum (ms)</label>
+          <input type="number" id="quantum" min="1" value="2">
+        </div>
+
+        <div class="field">
+          <label>Ctx Switch (ms)</label>
+          <input type="number" id="ctx-time" min="0" value="1">
+        </div>
+
+        <button onclick="buildTable()">Generar Tabla</button>
+        <button class="primary" onclick="simulate()">▶ Simular</button>
+        <button class="danger" onclick="clearResults()">✕ Limpiar</button>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PANEL: Tabla de procesos ── -->
+  <div class="panel" id="proc-panel">
+    <div class="panel-header">Tabla de Procesos</div>
+    <div class="panel-body" style="padding:0">
+      <table id="proc-table">
+        <thead>
+          <tr>
+            <th>PID</th>
+            <th>Llegada (ms)</th>
+            <th>Ráfaga (ms)</th>
+            <th class="priority-col">Prioridad (↓ menor = mayor)</th>
+          </tr>
+        </thead>
+        <tbody id="proc-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── PANEL: Diagrama de Gantt ── -->
+  <div class="panel hidden" id="gantt-panel">
+    <div class="panel-header">Diagrama de Gantt</div>
+
+    <!--
+      .gantt-scroll-wrapper permite scroll horizontal si el diagrama
+      es más ancho que la pantalla — las filas nunca colapsan.
+    -->
+    <div class="panel-body" style="padding: 28px 14px 10px;">
+      <div class="gantt-scroll-wrapper">
+        <div class="gantt-inner" id="gantt-rows"></div>
+      </div>
+    </div>
+
+    <!-- Leyenda de colores -->
+    <div class="legend" id="gantt-legend"></div>
+
+    <!-- Métricas resumen -->
+    <div class="metrics" id="metrics-bar"></div>
+  </div>
+
+  <!-- ── PANEL: Resultados por proceso ── -->
+  <div class="panel hidden" id="results-panel">
+    <div class="panel-header">Resultados por Proceso</div>
+    <div class="panel-body" style="padding:0">
+      <table class="results-table">
+        <thead>
+          <tr>
+            <th>PID</th>
+            <th>Llegada</th>
+            <th>Ráfaga</th>
+            <th>Inicio</th>
+            <th>Fin</th>
+            <th>T. Espera</th>
+            <th>T. Retorno</th>
+            <th>T. Respuesta</th>
+          </tr>
+        </thead>
+        <tbody id="results-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── PANEL: Traza de ejecución ── -->
+  <div class="panel hidden" id="log-panel">
+    <div class="panel-header">Traza de Ejecución — Cambios de Contexto</div>
+    <div class="panel-body" style="padding:0">
+      <div class="log-box" id="log-box"></div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<footer class="footer">
+  <span>By NumérikaAI · UCASAL · Salta</span>
+  <span>2026</span>
+</footer>
+
+<script src="scheduler.js"></script>
+</body>
+</html>

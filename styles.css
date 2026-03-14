@@ -1,0 +1,442 @@
+/* ============================================================
+   SIMULADOR DE PLANIFICACIÓN — styles.css
+   ============================================================ */
+
+:root {
+  --cream:   #E3DFBA;
+  --sage:    #C8D6BF;
+  --teal-lt: #93CCC6;
+  --teal:    #6CBDB5;
+  --dark:    #1A1F1E;
+  --bg:      #f5f3e8;
+  --surface: #faf9f2;
+  --border:  #dddbc8;
+  --muted:   #7a8a82;
+  --text:    #1A1F1E;
+
+  /* paleta de procesos */
+  --p0: #6CBDB5;
+  --p1: #4fa89f;
+  --p2: #C8D6BF;
+  --p3: #E3DFBA;
+  --p4: #93CCC6;
+  --p5: #a8c8c2;
+  --p6: #b5d4ce;
+  --p7: #d4e3c8;
+  --p8: #e8e4c6;
+  --p9: #b0c9c4;
+
+  --mono: 'Courier New', monospace;
+  --sans: 'Segoe UI', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ── */
+header {
+  background: var(--dark);
+  border-bottom: 2px solid var(--teal);
+  padding: 13px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+header .logo {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--teal);
+  letter-spacing: 3px;
+  border: 1px solid var(--teal);
+  padding: 2px 7px;
+  border-radius: 2px;
+}
+header h1 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cream);
+  letter-spacing: 0.3px;
+}
+
+/* ── Layout ── */
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 20px 24px;
+  flex: 1;
+}
+
+/* ── Panel ── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.panel-header {
+  background: var(--cream);
+  border-bottom: 1px solid var(--border);
+  padding: 7px 14px;
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel-header::before { content: '◆'; color: var(--teal); font-size: 8px; }
+.panel-body { padding: 14px; }
+
+/* ── Controls ── */
+.controls-row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+.field { display: flex; flex-direction: column; gap: 4px; }
+label {
+  font-size: 10px;
+  color: var(--muted);
+  font-family: var(--mono);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+input[type=number], select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 9px;
+  font-family: var(--mono);
+  font-size: 12px;
+  border-radius: 4px;
+  width: 90px;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+select { width: 185px; cursor: pointer; }
+input[type=number]:focus, select:focus {
+  border-color: var(--teal);
+  box-shadow: 0 0 0 2px rgba(108,189,181,0.18);
+}
+
+/* ── Buttons ── */
+button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  padding: 7px 16px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+button:hover { background: var(--cream); border-color: var(--muted); color: var(--dark); }
+button.primary { background: var(--teal); border-color: var(--teal); color: #fff; font-weight: 600; }
+button.primary:hover { background: #5aada5; }
+button.danger { color: #a09070; border-color: #ccc4a0; }
+button.danger:hover { background: #f0ede0; color: var(--dark); }
+
+/* ── Process Table ── */
+table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+thead th {
+  background: var(--cream);
+  border: 1px solid var(--border);
+  padding: 7px 10px;
+  text-align: center;
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+tbody tr:nth-child(odd)  { background: var(--surface); }
+tbody tr:nth-child(even) { background: var(--bg); }
+tbody tr:hover { background: rgba(108,189,181,0.07); }
+tbody td { border: 1px solid var(--border); padding: 5px 10px; text-align: center; }
+tbody td input[type=number] { width: 70px; padding: 3px 6px; text-align: center; border-color: transparent; background: transparent; }
+tbody td input[type=number]:focus { border-color: var(--teal); background: var(--surface); box-shadow: 0 0 0 2px rgba(108,189,181,0.15); }
+.pid-cell { color: var(--teal); font-weight: bold; font-size: 13px; }
+
+/* ════════════════════════════════════════════════════════════
+   GANTT — layout basado en posicionamiento absoluto
+   Cada bloque se ubica con left/width exactos → sin colapsamiento
+════════════════════════════════════════════════════════════ */
+
+/* Wrapper con scroll horizontal */
+.gantt-scroll-wrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+  padding-bottom: 4px;
+}
+
+/* Bloque interior con ancho fijo calculado en JS */
+.gantt-inner {
+  display: block;
+  position: relative;
+}
+
+/* Fila contenedora (label + track) */
+.gantt-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+/* Label izquierdo */
+.gantt-label {
+  width: 56px;
+  min-width: 56px;
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+  padding-right: 8px;
+  user-select: none;
+}
+
+/* Pista: posición relativa, altura fija, ancho fijo via style */
+.gantt-track {
+  position: relative;
+  height: 34px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 3px;
+  overflow: visible;   /* permite que los time-labels queden fuera del borde */
+}
+
+/* Líneas verticales de cuadrícula */
+.g-grid {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 1px;
+  background: var(--border);
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Bloque de proceso/idle/ctx — posición absoluta dentro de .gantt-track */
+.gantt-block {
+  position: absolute;
+  top: 1px;
+  height: calc(100% - 2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: default;
+  transition: filter 0.12s;
+  border: none;
+}
+.gantt-block:hover { filter: brightness(0.88); }
+
+/* ── Etiquetas de tiempo encima de cada bloque ── */
+.time-label-wrap {
+  position: absolute;
+  top: -18px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.tl {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  background: var(--surface);
+  padding: 0 2px;
+  border-radius: 2px;
+  white-space: nowrap;
+  user-select: none;
+  line-height: 1.2;
+}
+.tl-start { transform: translateX(-50%); }
+.tl-end   { transform: translateX(50%);  }
+
+/* ── Eje de tiempo (fila de ticks bajo el header) ── */
+.gantt-axis-row {
+  position: relative;
+  margin-left: 56px;
+  height: 18px;
+  margin-bottom: 2px;
+}
+.axis-tick {
+  position: absolute;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  transform: translateX(-50%);
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Estado idle */
+.gantt-block.idle {
+  background: rgba(200,214,191,0.18);
+  border: 1px dashed rgba(122,138,130,0.35);
+  color: var(--muted);
+  font-style: italic;
+  font-weight: 400;
+}
+
+/* Estado ctx switch */
+.gantt-block.ctx {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(122,138,130,0.30) 0px, rgba(122,138,130,0.30) 3px,
+    rgba(122,138,130,0.08) 3px, rgba(122,138,130,0.08) 6px
+  );
+  border: 1px solid rgba(122,138,130,0.5);
+  color: var(--muted);
+  font-size: 8px;
+  letter-spacing: 0.5px;
+  font-weight: 400;
+}
+
+/* Paleta de procesos */
+.p0 { background: var(--p0); color: #fff; }
+.p1 { background: var(--p1); color: #fff; }
+.p2 { background: var(--p2); color: var(--dark); }
+.p3 { background: var(--p3); color: var(--dark); }
+.p4 { background: var(--p4); color: var(--dark); }
+.p5 { background: var(--p5); color: var(--dark); }
+.p6 { background: var(--p6); color: var(--dark); }
+.p7 { background: var(--p7); color: var(--dark); }
+.p8 { background: var(--p8); color: var(--dark); }
+.p9 { background: var(--p9); color: var(--dark); }
+
+/* Separador entre sección CPU y sección por proceso */
+.gantt-separator {
+  height: 1px;
+  background: var(--border);
+  margin: 6px 0 6px 56px;
+  opacity: 0.6;
+}
+
+/* ── Leyenda ── */
+.legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 14px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  align-items: center;
+}
+.legend-item { display: flex; align-items: center; gap: 5px; }
+.legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+.legend-dot.idle { background: rgba(200,214,191,0.4); border: 1px dashed rgba(122,138,130,0.5); }
+.legend-dot.ctx  {
+  background: repeating-linear-gradient(45deg,
+    rgba(122,138,130,0.5) 0px, rgba(122,138,130,0.5) 2px,
+    transparent 2px, transparent 4px);
+  border: 1px solid rgba(122,138,130,0.5);
+}
+
+/* ── Métricas bar ── */
+.metrics {
+  display: flex;
+  flex-wrap: wrap;
+  border-top: 1px solid var(--border);
+  background: var(--cream);
+}
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 22px;
+  border-right: 1px solid var(--border);
+}
+.metric:last-child { border-right: none; }
+.metric .m-label {
+  font-size: 9px;
+  font-family: var(--mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.metric .m-value {
+  font-size: 18px;
+  font-family: var(--mono);
+  color: var(--teal);
+  font-weight: 700;
+}
+
+/* ── Log ── */
+.log-box {
+  background: var(--dark);
+  padding: 12px 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: #8aafa8;
+  max-height: 300px;
+  overflow-y: auto;
+  line-height: 2;
+}
+.log-box .ctx-line { color: var(--teal-lt); }
+.log-box .run-line { color: var(--sage); }
+.log-box .end-line { color: #90b0a0; font-style: italic; }
+.log-box .sep      { color: #2e3c3a; }
+.log-box .hdr      { color: var(--teal); letter-spacing: 1px; font-weight: bold; }
+
+/* ── Results table ── */
+.results-table thead th { font-size: 10px; }
+.results-table td { font-size: 12px; }
+
+/* ── Visibility toggles ── */
+#quantum-field { display: none; }
+.priority-col  { display: none; }
+.hidden        { display: none !important; }
+
+/* ── Footer ── */
+.footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.footer span:first-child { color: var(--teal); }
+.footer span:last-child  { color: var(--muted); }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--teal-lt); }
