@@ -459,8 +459,8 @@ function simulate() {
   const procs = getProcesses();
   if (!procs.length) { alert('Genera la tabla primero.'); return; }
 
-  const ctxTime = parseInt($('ctx-time').value) || 0;
-  const quantum  = parseInt($('quantum').value)  || 2;
+  const ctxTime = parseInt($('ctx-time').value) || 0; //  Hacer que usuario ingrese de cuanto seria el cambio de contexto solo si es ctx-time >= 0, pero por simplicidad lo dejamos siempre visible.
+  const quantum  = parseInt($('quantum').value)  || 2; // Hacer que el usuario ingrese el quantum solo si elige Round Robin sería ideal, pero por simplicidad lo dejamos siempre visible.
   const algo     = algoSel();
 
   Object.keys(pidMap).forEach(k => delete pidMap[k]);
