@@ -26,6 +26,9 @@ function buildTable() {
     `;
     tbody.appendChild(tr);
   }
+
+  // Limpiar resultados anteriores cada vez que se regenera la tabla
+  clearResults();
 }
 
 function getProcesses() {
@@ -47,12 +50,44 @@ function clearResults() {
 // ─── Algoritmos ────────────────────────────────────────────────────────────
 
 function runFCFS(procs, ctxTime) {
-  // Orden principal: tiempo de llegada.
-  // Desempate (misma llegada): mayor prioridad primero, luego id original.
-  const sorted = [...procs].sort((a, b) =>
-    a.arrival - b.arrival || b.priority - a.priority || a.id - b.id
-  );
-  return runNonPreemptive(sorted, ctxTime, 'FCFS — First Come First Served');
+  const timeline = [], log = [];
+  const rem = procs.map(p => ({ ...p, done: false }));
+  let time = 0, lastPid = null;
+  log.push(`<span class="hdr">=== FCFS — First Come First Served ===</span>`);
+  log.push(`<span class="hdr">   (desempate de llegada simultánea: mayor prioridad primero)</span>`);
+
+  while (rem.some(p => !p.done)) {
+    // Procesos disponibles: ya llegaron
+    const avail = rem.filter(p => !p.done && p.arrival <= time);
+
+    if (!avail.length) {
+      // CPU ociosa: saltar al siguiente proceso
+      const nextArr = Math.min(...rem.filter(p => !p.done).map(p => p.arrival));
+      timeline.push({ pid: 'idle', start: time, end: nextArr, type: 'idle' });
+      log.push(`<span class="run-line">  t=${time}–${nextArr}  [IDLE]</span>`);
+      time = nextArr;
+      // Después de periodos de idle, no hay proceso anterior en CPU
+      lastPid = null;
+      continue;
+    }
+
+    // FCFS: primero el que llegó antes.
+    // Si llegaron al mismo tiempo → mayor prioridad → menor id (orden original)
+    avail.sort((a, b) => a.arrival - b.arrival || b.priority - a.priority || a.id - b.id);
+    const p = avail[0];
+
+    if (lastPid !== null && lastPid !== p.pid && ctxTime > 0) {
+      timeline.push({ pid: 'ctx', start: time, end: time + ctxTime, type: 'ctx' });
+      log.push(`<span class="ctx-line">  t=${time}–${time + ctxTime}  [CTX SWITCH] ${lastPid} → ${p.pid}  (+${ctxTime}ms)</span>`);
+      time += ctxTime;
+    }
+    const end = time + p.burst;
+    timeline.push({ pid: p.pid, start: time, end, type: 'run' });
+    log.push(`<span class="run-line">  t=${time}–${end}  [EJECUTANDO] ${p.pid}  llegada=${p.arrival}  ráfaga=${p.burst}ms  prioridad=${p.priority}</span>`);
+    log.push(`<span class="end-line">  t=${end}  [FIN] ${p.pid}</span>`);
+    p.done = true; lastPid = p.pid; time = end;
+  }
+  return { timeline, log };
 }
 
 function runSJF(procs, ctxTime) {
@@ -67,10 +102,13 @@ function runSJF(procs, ctxTime) {
       const next = Math.min(...rem.filter(p => !p.done).map(p => p.arrival));
       timeline.push({ pid: 'idle', start: time, end: next, type: 'idle' });
       log.push(`<span class="run-line">  t=${time}–${next}  [IDLE]</span>`);
-      time = next; continue;
+      time = next;
+      // Después de idle no hay proceso previo en CPU
+      lastPid = null;
+      continue;
     }
-    // Criterio: menor ráfaga → mayor prioridad → menor llegada
-    avail.sort((a, b) => a.burst - b.burst || b.priority - a.priority || a.arrival - b.arrival);
+    // Criterio: menor ráfaga → mayor prioridad → menor llegada → menor id
+    avail.sort((a, b) => a.burst - b.burst || b.priority - a.priority || a.arrival - b.arrival || a.id - b.id);
     const p = avail[0];
     if (lastPid !== null && lastPid !== p.pid && ctxTime > 0) {
       timeline.push({ pid: 'ctx', start: time, end: time + ctxTime, type: 'ctx' });
@@ -97,11 +135,10 @@ function runRR(procs, ctxTime, quantum) {
   const arrived = new Set();
 
   const enqueue = t => {
-    // Recoger todos los que llegan en este instante (no encolados aún)
+    // Solo los que llegan EXACTAMENTE en t (nuevos)
     const newArrivals = queue.filter(p => !arrived.has(p.id) && p.arrival <= t && !p.done);
-    // Ordenar por prioridad descendente para que el de mayor prioridad
-    // quede primero dentro del lote de llegadas simultáneas
-    newArrivals.sort((a, b) => b.priority - a.priority || a.arrival - b.arrival || a.id - b.id);
+    // Mayor prioridad entra primero al lote simultáneo; desempate por id original
+    newArrivals.sort((a, b) => b.priority - a.priority || a.id - b.id);
     newArrivals.forEach(p => { arrived.add(p.id); readyQueue.push(p); });
   };
 
@@ -111,7 +148,10 @@ function runRR(procs, ctxTime, quantum) {
       const next = Math.min(...queue.filter(p => !p.done).map(p => p.arrival));
       timeline.push({ pid: 'idle', start: time, end: next, type: 'idle' });
       log.push(`<span class="run-line">  t=${time}–${next}  [IDLE] cola vacía</span>`);
-      time = next; enqueue(time); continue;
+      time = next;
+      // CPU quedó ociosa; limpiamos estado de proceso previo
+      lastPid = null;
+      enqueue(time); continue;
     }
     const p = readyQueue.shift();
     if (p.firstRun < 0) p.firstRun = time;
@@ -143,9 +183,13 @@ function runPriority(procs, ctxTime) {
       const next = Math.min(...rem.filter(p => !p.done).map(p => p.arrival));
       timeline.push({ pid: 'idle', start: time, end: next, type: 'idle' });
       log.push(`<span class="run-line">  t=${time}–${next}  [IDLE]</span>`);
-      time = next; continue;
+      time = next;
+      // CPU ociosa: no se consideran cambios de contexto
+      lastPid = null;
+      continue;
     }
-    avail.sort((a, b) => b.priority - a.priority || a.arrival - b.arrival);  // mayor número = mayor prioridad
+    // Mayor prioridad → menor llegada → menor id (determinista)
+    avail.sort((a, b) => b.priority - a.priority || a.arrival - b.arrival || a.id - b.id);
     const p = avail[0];
     if (lastPid !== null && lastPid !== p.pid && ctxTime > 0) {
       timeline.push({ pid: 'ctx', start: time, end: time + ctxTime, type: 'ctx' });
@@ -174,6 +218,8 @@ function runNonPreemptive(sorted, ctxTime, name) {
       timeline.push({ pid: 'idle', start: time, end: next.arrival, type: 'idle' });
       log.push(`<span class="run-line">  t=${time}–${next.arrival}  [IDLE]</span>`);
       time = next.arrival;
+      // Después de un periodo de CPU ociosa, no hay proceso previo
+      lastPid = null;
     }
     if (lastPid !== null && lastPid !== next.pid && ctxTime > 0) {
       timeline.push({ pid: 'ctx', start: time, end: time + ctxTime, type: 'ctx' });
@@ -459,8 +505,8 @@ function simulate() {
   const procs = getProcesses();
   if (!procs.length) { alert('Genera la tabla primero.'); return; }
 
-  const ctxTime = parseInt($('ctx-time').value) || 0; //  Hacer que usuario ingrese de cuanto seria el cambio de contexto solo si es ctx-time >= 0, pero por simplicidad lo dejamos siempre visible.
-  const quantum  = parseInt($('quantum').value)  || 2; // Hacer que el usuario ingrese el quantum solo si elige Round Robin sería ideal, pero por simplicidad lo dejamos siempre visible.
+  const ctxTime = parseInt($('ctx-time').value) || 0;
+  const quantum  = parseInt($('quantum').value)  || 2;
   const algo     = algoSel();
 
   Object.keys(pidMap).forEach(k => delete pidMap[k]);
@@ -503,3 +549,263 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   buildTable();
 });
+
+/* ============================================================
+   MÓDULO ENVEJECIMIENTO — SJF Predictivo (Aging)
+   Fórmula: τ(n+1) = α · t(n) + (1 − α) · τ(n)
+   ============================================================ */
+
+/** Construye la tabla de entrada de tiempos reales */
+function agingBuildTable() {
+  const n     = parseInt($('ag-n').value)    || 5;
+  const tau0  = parseFloat($('ag-tau0').value) || 45;
+  const tbody = $('ag-tbody');
+  tbody.innerHTML = '';
+
+  for (let i = 1; i <= n; i++) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="pid-cell" style="color:var(--teal)">n = ${i}</td>
+      <td class="ag-td-input">
+        <input type="number" min="0" step="0.1" value="${Math.round(10 + Math.random()*40)}" class="ag-real-input">
+      </td>
+    `;
+    tbody.appendChild(tr);
+  }
+  agingClear();
+}
+
+/** Limpia resultados del módulo aging */
+function agingClear() {
+  ['ag-results-panel','ag-chart-panel'].forEach(id => $(id).classList.add('hidden'));
+}
+
+/** Ejecuta la simulación de envejecimiento y renderiza tabla + gráfico */
+function agingSimulate() {
+  const alpha = parseFloat($('ag-alpha').value);
+  const tau0  = parseFloat($('ag-tau0').value);
+  const rows  = Array.from($('ag-tbody').querySelectorAll('tr'));
+
+  if (!rows.length) { alert('Generá la tabla primero.'); return; }
+  if (isNaN(alpha) || alpha <= 0 || alpha > 1) {
+    alert('α debe estar entre 0 (exclusivo) y 1 (inclusivo).'); return;
+  }
+
+  const tReals = rows.map(r => parseFloat(r.querySelector('.ag-real-input').value) || 0);
+
+  // Calcular secuencia de predicciones
+  // τ(1) = tau0 (predicción inicial dada)
+  // Para n=1: τ(2) = α·t(1) + (1-α)·τ(1)
+  // Para n=2: τ(3) = α·t(2) + (1-α)·τ(2)  etc.
+  const taus = [tau0]; // taus[0] = τ(1), taus[1] = τ(2), ...
+  for (let i = 0; i < tReals.length; i++) {
+    const next = alpha * tReals[i] + (1 - alpha) * taus[i];
+    taus.push(round4(next));
+  }
+
+  // Render tabla de resultados
+  const tbody = $('ag-results-tbody');
+  tbody.innerHTML = '';
+
+  tReals.forEach((t, i) => {
+    const tauN     = taus[i];       // predicción usada en esta ejecución
+    const tauNext  = taus[i + 1];   // nueva predicción calculada
+    const calcStr  = `${alpha} × ${t} + ${round4(1 - alpha)} × ${tauN} = ${round4(alpha * t)} + ${round4((1 - alpha) * tauN)}`;
+    const isLast   = i === tReals.length - 1;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="pid-cell" style="color:var(--teal)">n = ${i + 1}</td>
+      <td>${t}</td>
+      <td>${tauN}</td>
+      <td class="ag-calc-cell">${calcStr}</td>
+      <td class="ag-pred-cell">${tauNext}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Fila extra: "próxima ejecución" — solo muestra la predicción disponible
+  const trNext = document.createElement('tr');
+  trNext.className = 'ag-next-row';
+  trNext.innerHTML = `
+    <td class="pid-cell" style="color:var(--teal);opacity:0.6">n = ${tReals.length + 1}</td>
+    <td style="color:rgba(108,189,181,0.4)">—</td>
+    <td style="color:rgba(108,189,181,0.4)">${taus[tReals.length]}</td>
+    <td class="ag-calc-cell">Predicción calculada en paso anterior</td>
+    <td class="ag-pred-cell">${taus[tReals.length]} ms ✓</td>
+  `;
+  tbody.appendChild(trNext);
+
+  // Métricas
+  const errors = tReals.map((t, i) => Math.abs(t - taus[i]));
+  const mae    = round4(errors.reduce((s, e) => s + e, 0) / errors.length);
+  const rmse   = round4(Math.sqrt(errors.reduce((s, e) => s + e * e, 0) / errors.length));
+  const finalPred = taus[tReals.length];
+
+  $('ag-metrics-bar').innerHTML = `
+    <div class="metric"><span class="m-label">α utilizado</span><span class="m-value">${alpha}</span></div>
+    <div class="metric"><span class="m-label">τ₁ inicial</span><span class="m-value">${tau0} ms</span></div>
+    <div class="metric"><span class="m-label">Próxima predicción</span><span class="m-value">${finalPred} ms</span></div>
+    <div class="metric"><span class="m-label">Error Absoluto Medio</span><span class="m-value">${mae} ms</span></div>
+    <div class="metric"><span class="m-label">RMSE</span><span class="m-value">${rmse} ms</span></div>
+  `;
+
+  ['ag-results-panel','ag-chart-panel'].forEach(id => $(id).classList.remove('hidden'));
+
+  // Render gráfico
+  agingRenderChart(tReals, taus, alpha);
+}
+
+/** Dibuja el gráfico de líneas en el canvas */
+function agingRenderChart(tReals, taus, alpha) {
+  const canvas = $('ag-canvas');
+  const ctx    = canvas.getContext('2d');
+
+  // Ajustar resolución para pantallas HiDPI
+  const dpr = window.devicePixelRatio || 1;
+  const W   = canvas.offsetWidth  || 800;
+  const H   = 280;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+
+  ctx.clearRect(0, 0, W, H);
+
+  const PAD = { top: 24, right: 24, bottom: 40, left: 52 };
+  const cW   = W - PAD.left - PAD.right;
+  const cH   = H - PAD.top  - PAD.bottom;
+  const n    = tReals.length;
+
+  // Dominio X: ejecuciones 1..n
+  // Dominio Y: min/max de todos los valores
+  const allVals = [...tReals, ...taus];
+  const yMin = Math.floor(Math.min(...allVals) * 0.85);
+  const yMax = Math.ceil (Math.max(...allVals) * 1.10);
+
+  const xScale = i  => PAD.left + (i / n) * cW;
+  const yScale = v  => PAD.top  + cH - ((v - yMin) / (yMax - yMin)) * cH;
+
+  // ── Fondo del área ──
+  ctx.fillStyle = '#1a1f1e';
+  ctx.fillRect(0, 0, W, H);
+
+  // ── Cuadrícula ──
+  ctx.strokeStyle = 'rgba(108,189,181,0.1)';
+  ctx.lineWidth   = 1;
+  const yTicks = 5;
+  for (let i = 0; i <= yTicks; i++) {
+    const v = yMin + (i / yTicks) * (yMax - yMin);
+    const y = yScale(v);
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + cW, y); ctx.stroke();
+    ctx.fillStyle = 'rgba(108,189,181,0.5)';
+    ctx.font = '10px Courier New';
+    ctx.textAlign = 'right';
+    ctx.fillText(round4(v), PAD.left - 6, y + 3);
+  }
+
+  // ── Ejes ──
+  ctx.strokeStyle = 'rgba(108,189,181,0.3)';
+  ctx.lineWidth   = 1;
+  ctx.beginPath();
+  ctx.moveTo(PAD.left, PAD.top);
+  ctx.lineTo(PAD.left, PAD.top + cH);
+  ctx.lineTo(PAD.left + cW, PAD.top + cH);
+  ctx.stroke();
+
+  // ── Labels eje X ──
+  ctx.fillStyle = 'rgba(108,189,181,0.5)';
+  ctx.font = '10px Courier New';
+  ctx.textAlign = 'center';
+  for (let i = 1; i <= n; i++) {
+    ctx.fillText(`n=${i}`, xScale(i - 0.5), PAD.top + cH + 16);
+  }
+
+  // ── Línea de tiempo real t(n) ──
+  ctx.strokeStyle = '#6CBDB5';
+  ctx.lineWidth   = 2;
+  ctx.lineJoin    = 'round';
+  ctx.beginPath();
+  tReals.forEach((t, i) => {
+    const x = xScale(i + 0.5);
+    const y = yScale(t);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+
+  // Puntos t(n)
+  tReals.forEach((t, i) => {
+    const x = xScale(i + 0.5);
+    const y = yScale(t);
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#6CBDB5';
+    ctx.fill();
+    ctx.fillStyle = 'rgba(108,189,181,0.8)';
+    ctx.font = '10px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText(t, x, y - 9);
+  });
+
+  // ── Línea de predicción τ(n) — usamos taus[0..n-1] alineados con los t(n) ──
+  ctx.strokeStyle = '#E3DFBA';
+  ctx.lineWidth   = 2;
+  ctx.setLineDash([5, 3]);
+  ctx.beginPath();
+  tReals.forEach((_, i) => {
+    const x = xScale(i + 0.5);
+    const y = yScale(taus[i]);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Puntos τ(n)
+  tReals.forEach((_, i) => {
+    const x = xScale(i + 0.5);
+    const y = yScale(taus[i]);
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#E3DFBA';
+    ctx.fill();
+    ctx.fillStyle = 'rgba(227,223,186,0.8)';
+    ctx.font = '10px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText(taus[i], x, y + 16);
+  });
+
+  // ── Punto de próxima predicción (fuera del rango real) ──
+  const xFut = xScale(n + 0.5);
+  if (xFut < PAD.left + cW + 20) {
+    const yFut = yScale(taus[n]);
+    ctx.beginPath();
+    ctx.arc(xFut, yFut, 5, 0, Math.PI * 2);
+    ctx.fillStyle = '#6CBDB5';
+    ctx.strokeStyle = '#E3DFBA';
+    ctx.lineWidth = 2;
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = 'rgba(108,189,181,0.9)';
+    ctx.font = 'bold 10px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText(`τ(${n+1})=${taus[n]}`, xFut, yFut - 10);
+    ctx.fillStyle = 'rgba(108,189,181,0.4)';
+    ctx.font = '9px Courier New';
+    ctx.fillText(`n=${n+1}`, xFut, PAD.top + cH + 16);
+  }
+
+  // ── Título del eje Y ──
+  ctx.save();
+  ctx.translate(12, PAD.top + cH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = 'rgba(108,189,181,0.4)';
+  ctx.font = '10px Courier New';
+  ctx.textAlign = 'center';
+  ctx.fillText('Tiempo (ms)', 0, 0);
+  ctx.restore();
+}
+
+function round4(v) { return Math.round(v * 10000) / 10000; }
+
+// Init aging al cargar
+document.addEventListener('DOMContentLoaded', () => { agingBuildTable(); });
