@@ -1,10 +1,18 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CPU SIM — Simulador de Planificación</title>
   <link rel="stylesheet" href="styles.css">
+  <!-- Anti-flash: aplicar tema guardado antes de renderizar -->
+  <script>
+    (function() {
+      var t = localStorage.getItem('cpusim-theme');
+      if (!t) t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 </head>
 <body>
 
@@ -14,7 +22,12 @@
 <header>
   <span class="logo">CPU SIM</span>
   <h1 id="header-title">Simulador de Planificación — Procesador Mononúcleo</h1>
-  <button class="header-back hidden" id="btn-back" onclick="goHome()">← Volver al menú</button>
+  <div class="header-actions">
+    <button class="header-back hidden" id="btn-back" onclick="goHome()">← Volver al menú</button>
+    <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
+      <span class="theme-icon">☀</span>
+    </button>
+  </div>
 </header>
 
 <!-- ══════════════════════════════════════════════════

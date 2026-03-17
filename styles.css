@@ -2,23 +2,18 @@
    SIMULADOR DE PLANIFICACIÓN — styles.css
    ============================================================ */
 
+/* ── Constantes siempre fijas ── */
 :root {
+  --teal:    #6CBDB5;
+  --teal-lt: #93CCC6;
   --cream:   #E3DFBA;
   --sage:    #C8D6BF;
-  --teal-lt: #93CCC6;
-  --teal:    #6CBDB5;
-  --dark:    #1A1F1E;
-  --bg:      #f5f3e8;
-  --surface: #faf9f2;
-  --border:  #dddbc8;
-  --muted:   #7a8a82;
-  --text:    #1A1F1E;
 
-  /* paleta de procesos */
+  /* paleta de procesos (igual en ambos temas) */
   --p0: #6CBDB5;
   --p1: #4fa89f;
   --p2: #C8D6BF;
-  --p3: #E3DFBA;
+  --p3: #d4c97a;
   --p4: #93CCC6;
   --p5: #a8c8c2;
   --p6: #b5d4ce;
@@ -28,6 +23,67 @@
 
   --mono: 'Courier New', monospace;
   --sans: 'Segoe UI', sans-serif;
+
+  /* transición suave al cambiar tema */
+  --transition-theme: background 0.25s, color 0.25s, border-color 0.25s;
+}
+
+/* ══ TEMA OSCURO (default) ══ */
+html[data-theme="dark"] {
+  --bg:       #111615;
+  --surface:  #1a1f1e;
+  --surface2: #212926;
+  --border:   #2e3a38;
+  --border2:  #3a4a47;
+  --text:     #dde8e6;
+  --text-sec: #8aafa8;
+  --muted:    #5a7870;
+  --dark:     #0d1211;
+  --input-bg: #141918;
+  --row-odd:  #1a1f1e;
+  --row-even: #1e2523;
+  --log-bg:   #0f1413;
+  --log-text: #8aafa8;
+  --hero-bg:  #0d1211;
+  --card-bg:  #1a1f1e;
+  --card-hover: rgba(108,189,181,0.06);
+  --tag-bg:   rgba(108,189,181,0.1);
+  --tag-border: rgba(108,189,181,0.25);
+  --metrics-bg: rgba(227,223,186,0.05);
+  --header-bg: #0d1211;
+  --footer-bg: #141918;
+  --footer-border: #2e3a38;
+  --footer-text: #5a7870;
+  color-scheme: dark;
+}
+
+/* ══ TEMA CLARO ══ */
+html[data-theme="light"] {
+  --bg:       #f5f3e8;
+  --surface:  #fdfcf6;
+  --surface2: #f0ede0;
+  --border:   #dddbc8;
+  --border2:  #c8c4a8;
+  --text:     #1A1F1E;
+  --text-sec: #4a5a52;
+  --muted:    #7a8a82;
+  --dark:     #1A1F1E;
+  --input-bg: #f5f3e8;
+  --row-odd:  #fdfcf6;
+  --row-even: #f5f3e8;
+  --log-bg:   #1A1F1E;
+  --log-text: #8aafa8;
+  --hero-bg:  #1A1F1E;
+  --card-bg:  #fdfcf6;
+  --card-hover: rgba(108,189,181,0.06);
+  --tag-bg:   rgba(108,189,181,0.12);
+  --tag-border: rgba(108,189,181,0.3);
+  --metrics-bg: #f0ede0;
+  --header-bg: #1A1F1E;
+  --footer-bg: #fdfcf6;
+  --footer-border: #dddbc8;
+  --footer-text: #7a8a82;
+  color-scheme: light;
 }
 
 
@@ -37,7 +93,7 @@
 
 /* header back button */
 .header-back {
-  margin-left: auto;
+  margin-left: 0;
   background: transparent;
   border: 1px solid rgba(108,189,181,0.4);
   color: var(--teal-lt);
@@ -65,7 +121,7 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  background: var(--dark);
+  background: var(--header-bg);
 }
 
 .home-hero-bg {
@@ -132,7 +188,7 @@
 }
 
 .home-card {
-  background: var(--surface);
+  background: var(--card-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 28px 24px;
@@ -159,6 +215,7 @@
   transform: translateY(-4px);
   box-shadow: 0 12px 32px rgba(108,189,181,0.12);
   border-color: var(--teal);
+  background: var(--card-bg);
 }
 
 .home-card:hover::before { opacity: 1; }
@@ -209,8 +266,8 @@
   font-family: var(--mono);
   font-size: 10px;
   color: var(--teal);
-  background: rgba(108,189,181,0.1);
-  border: 1px solid rgba(108,189,181,0.25);
+  background: var(--tag-bg);
+  border: 1px solid var(--tag-border);
   padding: 2px 7px;
   border-radius: 3px;
   letter-spacing: 0.3px;
@@ -246,11 +303,12 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  transition: var(--transition-theme);
 }
 
 /* ── Header ── */
 header {
-  background: var(--dark);
+  background: var(--header-bg);
   border-bottom: 2px solid var(--teal);
   padding: 13px 24px;
   display: flex;
@@ -290,7 +348,7 @@ header h1 {
   overflow: hidden;
 }
 .panel-header {
-  background: var(--cream);
+  background: var(--surface2);
   border-bottom: 1px solid var(--border);
   padding: 7px 14px;
   font-size: 10px;
@@ -321,7 +379,7 @@ label {
   text-transform: uppercase;
 }
 input[type=number], select {
-  background: var(--bg);
+  background: var(--input-bg);
   border: 1px solid var(--border);
   color: var(--text);
   padding: 6px 9px;
@@ -371,8 +429,8 @@ thead th {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
-tbody tr:nth-child(odd)  { background: var(--surface); }
-tbody tr:nth-child(even) { background: var(--bg); }
+tbody tr:nth-child(odd)  { background: var(--row-odd); }
+tbody tr:nth-child(even) { background: var(--row-even); }
 tbody tr:hover { background: rgba(108,189,181,0.07); }
 tbody td { border: 1px solid var(--border); padding: 5px 10px; text-align: center; }
 tbody td input[type=number] { width: 70px; padding: 3px 6px; text-align: center; border-color: transparent; background: transparent; }
@@ -423,7 +481,7 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   height: 34px;
   flex-shrink: 0;
   border: 1px solid var(--border);
-  background: var(--bg);
+  background: var(--input-bg);
   border-radius: 3px;
   overflow: visible;   /* permite que los time-labels queden fuera del borde */
 }
@@ -573,7 +631,7 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   display: flex;
   flex-wrap: wrap;
   border-top: 1px solid var(--border);
-  background: var(--cream);
+  background: var(--metrics-bg);
 }
 .metric {
   display: flex;
@@ -599,11 +657,11 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
 
 /* ── Log ── */
 .log-box {
-  background: var(--dark);
+  background: var(--header-bg);
   padding: 12px 14px;
   font-family: var(--mono);
   font-size: 11px;
-  color: #8aafa8;
+  color: var(--log-text);
   max-height: 300px;
   overflow-y: auto;
   line-height: 2;
@@ -628,7 +686,7 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
 ════════════════════════════════════════════════════════════ */
 
 .aging-section {
-  background: var(--dark);
+  background: var(--header-bg);
   border-top: 3px solid var(--teal);
   padding-bottom: 32px;
 }
@@ -655,7 +713,7 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
 .aging-hero h2 {
   font-size: 20px;
   font-weight: 700;
-  color: var(--cream);
+  color: #E3DFBA;
   margin-bottom: 8px;
 }
 
@@ -682,30 +740,30 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
 }
 
 .aging-section .panel {
-  background: #222826;
+  background: var(--surface);
   border-color: rgba(108,189,181,0.2);
 }
 .aging-section .panel-header {
-  background: rgba(227,223,186,0.07);
+  background: var(--surface2);
   border-color: rgba(108,189,181,0.2);
   color: var(--teal-lt);
 }
 .aging-section .panel-header::before { color: var(--teal); }
 
 .aging-section thead th {
-  background: rgba(227,223,186,0.06);
+  background: var(--surface2);
   border-color: rgba(108,189,181,0.15);
   color: var(--teal-lt);
 }
-.aging-section tbody tr:nth-child(odd)  { background: rgba(255,255,255,0.02); }
-.aging-section tbody tr:nth-child(even) { background: rgba(255,255,255,0.04); }
+.aging-section tbody tr:nth-child(odd)  { background: var(--row-odd); }
+.aging-section tbody tr:nth-child(even) { background: var(--row-even); }
 .aging-section tbody tr:hover           { background: rgba(108,189,181,0.07); }
 .aging-section tbody td {
-  border-color: rgba(108,189,181,0.12);
-  color: #c8d6bf;
+  border-color: var(--border);
+  color: var(--text);
 }
 .aging-section input[type=number] {
-  background: #1a1f1e;
+  background: var(--input-bg);
   border-color: rgba(108,189,181,0.3);
   color: var(--cream);
 }
@@ -713,7 +771,7 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   border-color: var(--teal);
   box-shadow: 0 0 0 2px rgba(108,189,181,0.18);
 }
-.aging-section label   { color: var(--teal-lt); }
+.aging-section label   { color: var(--teal); }
 .aging-section .panel-body { padding: 14px; }
 
 .ag-calc-cell {
@@ -733,7 +791,7 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
 .ag-next-row .ag-pred-cell { color: var(--teal) !important; font-style: normal; }
 
 .aging-section .metrics {
-  background: rgba(227,223,186,0.05);
+  background: var(--metrics-bg);
   border-top-color: rgba(108,189,181,0.2);
 }
 .aging-section .metric .m-label { color: rgba(108,189,181,0.6); }
@@ -742,7 +800,7 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
 
 .ag-chart-wrap {
   width: 100%;
-  background: #1a1f1e;
+  background: var(--input-bg);
   border: 1px solid rgba(108,189,181,0.15);
   border-radius: 4px;
   padding: 16px;
@@ -774,10 +832,124 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
 }
 
 
+
+/* ── Header actions group ── */
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Theme toggle button ── */
+.theme-toggle {
+  background: transparent;
+  border: 1px solid rgba(108,189,181,0.35);
+  color: var(--teal-lt);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  background: rgba(108,189,181,0.12);
+  border-color: var(--teal);
+  transform: rotate(20deg) scale(1.1);
+  color: var(--cream);
+}
+
+/* ── header-back margin reset (now inside header-actions) ── */
+.header-back {
+  margin-left: 0;
+}
+
+/* ── Light mode overrides for elements that need extra care ── */
+html[data-theme="light"] .log-box {
+  background: var(--log-bg);
+  color: var(--log-text);
+}
+
+html[data-theme="light"] header {
+  background: var(--header-bg);
+}
+
+html[data-theme="light"] .home-hero,
+html[data-theme="light"] .aging-section,
+html[data-theme="light"] #screen-aging {
+  background: var(--hero-bg);
+}
+
+html[data-theme="light"] .home-hero-content .home-title { color: #E3DFBA; }
+html[data-theme="light"] .home-hero-content .home-sub   { color: var(--teal-lt); }
+html[data-theme="light"] .home-hero-content .home-desc  { color: #93a89c; }
+
+html[data-theme="light"] .home-card {
+  background: var(--card-bg);
+  border-color: var(--border);
+  color: var(--text);
+}
+html[data-theme="light"] .home-card h3 { color: var(--text); }
+html[data-theme="light"] .home-card p  { color: var(--muted); }
+
+html[data-theme="light"] .panel-header {
+  color: var(--muted);
+}
+
+html[data-theme="light"] .metric .m-value { color: var(--teal); }
+html[data-theme="light"] .metric .m-label { color: var(--muted); }
+
+html[data-theme="light"] .gantt-block.idle {
+  background: rgba(200,214,191,0.25);
+}
+
+html[data-theme="light"] .gantt-track {
+  background: var(--surface2);
+}
+
+html[data-theme="light"] .tl { background: var(--surface); }
+
+html[data-theme="light"] .axis-tick { color: var(--muted); }
+
+html[data-theme="light"] .legend {
+  background: var(--surface);
+}
+
+/* Dark theme: aging section panels get darker surface */
+html[data-theme="dark"] .aging-section .panel       { background: #1e2523; }
+html[data-theme="dark"] .aging-section .panel-header { background: #252f2d; }
+html[data-theme="dark"] .aging-section thead th      { background: #252f2d; }
+html[data-theme="dark"] .aging-section tbody tr:nth-child(odd)  { background: #1e2523; }
+html[data-theme="dark"] .aging-section tbody tr:nth-child(even) { background: #232c2a; }
+
+/* Light mode aging */
+html[data-theme="light"] .aging-section .panel       { background: #fdfcf6; border-color: var(--border); }
+html[data-theme="light"] .aging-section .panel-header { background: #f0ede0; border-color: var(--border); color: var(--muted); }
+html[data-theme="light"] .aging-section thead th      { background: #f0ede0; color: var(--muted); border-color: var(--border); }
+html[data-theme="light"] .aging-section tbody td      { color: var(--text); border-color: var(--border); }
+html[data-theme="light"] .aging-section input[type=number] { background: var(--bg); border-color: var(--border); color: var(--text); }
+html[data-theme="light"] .aging-section label         { color: var(--muted); }
+html[data-theme="light"] .ag-chart-wrap               { background: #1a1f1e; }
+html[data-theme="light"] .aging-section .metrics      { background: #f0ede0; }
+html[data-theme="light"] .aging-section .metric .m-value { color: var(--teal); }
+
+html[data-theme="light"] .aging-hero code {
+  background: rgba(108,189,181,0.15);
+  color: var(--teal);
+}
+
+
 /* ── Footer ── */
 .footer {
-  background: var(--surface);
-  border-top: 1px solid var(--border);
+  background: var(--footer-bg);
+  border-top: 1px solid var(--footer-border);
   padding: 14px 24px;
   display: flex;
   justify-content: space-between;
@@ -789,7 +961,7 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
 }
 
 .footer span:first-child { color: var(--teal); }
-.footer span:last-child  { color: var(--muted); }
+.footer span:last-child  { color: var(--footer-text); }
 
 /* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

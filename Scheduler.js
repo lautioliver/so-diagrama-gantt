@@ -1,4 +1,36 @@
 /* ============================================================
+   TEMA — dark / light con localStorage
+   ============================================================ */
+
+const THEME_KEY = 'cpusim-theme';
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const icon = document.getElementById('theme-toggle');
+  if (icon) {
+    icon.querySelector('.theme-icon').textContent = theme === 'dark' ? '☀' : '☾';
+    icon.title = theme === 'dark' ? 'Cambiar a tema claro' : 'Cambiar a tema oscuro';
+  }
+  localStorage.setItem(THEME_KEY, theme);
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+}
+
+function initTheme() {
+  // Respetar preferencia del sistema si no hay preferencia guardada
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved) {
+    applyTheme(saved);
+  } else {
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    applyTheme(prefersDark ? 'dark' : 'light');
+  }
+}
+
+/* ============================================================
    NAVEGACIÓN — Sistema de módulos / pantallas
    ============================================================ */
 
@@ -562,6 +594,9 @@ function simulate() {
 
 // ─── Init ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+  // Inicializar tema
+  initTheme();
+
   // Mostrar pantalla de inicio al cargar
   showScreen('screen-home');
 
