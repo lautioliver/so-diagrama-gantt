@@ -3,32 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simulador de Planificación de Procesos</title>
+  <title>CPU SIM — Simulador de Planificación</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
 <!-- ══════════════════════════════════════════════════
-     ENCABEZADO
+     HEADER (siempre visible)
 ══════════════════════════════════════════════════ -->
 <header>
   <span class="logo">CPU SIM</span>
-  <h1>Simulador de Planificación — Procesador Mononúcleo</h1>
+  <h1 id="header-title">Simulador de Planificación — Procesador Mononúcleo</h1>
+  <button class="header-back hidden" id="btn-back" onclick="goHome()">← Volver al menú</button>
 </header>
 
+<!-- ══════════════════════════════════════════════════
+     PANTALLA DE INICIO — LAUNCHER
+══════════════════════════════════════════════════ -->
+<div id="screen-home">
+
+  <div class="home-hero">
+    <div class="home-hero-bg"></div>
+    <div class="home-hero-content">
+      <p class="home-sub">Análisis Numérico · UCASAL · Salta · 2026</p>
+      <h2 class="home-title">Seleccioná un módulo</h2>
+      <p class="home-desc">Elegí el método que querés simular.<br>Cada módulo es independiente y tiene sus propias herramientas.</p>
+    </div>
+  </div>
+
+  <div class="home-grid">
+
+    <!-- Módulo 1: Planificación clásica -->
+    <div class="home-card" onclick="openModule('scheduler')">
+      <div class="home-card-icon">⚙️</div>
+      <div class="home-card-num">01</div>
+      <h3>Planificación de Procesos</h3>
+      <p>Simulá los algoritmos clásicos de scheduling en un procesador mononúcleo con diagrama de Gantt interactivo.</p>
+      <ul class="home-card-tags">
+        <li>FCFS</li>
+        <li>SJF</li>
+        <li>Round Robin</li>
+        <li>Prioridad</li>
+      </ul>
+      <span class="home-card-cta">Abrir módulo →</span>
+    </div>
+
+    <!-- Módulo 2: Envejecimiento -->
+    <div class="home-card" onclick="openModule('aging')">
+      <div class="home-card-icon">📈</div>
+      <div class="home-card-num">02</div>
+      <h3>Envejecimiento — SJF Predictivo</h3>
+      <p>Predecí tiempos de ráfaga usando la media exponencial ponderada. Visualizá cómo evoluciona la predicción.</p>
+      <ul class="home-card-tags">
+        <li>τ(n+1) = α·t(n) + (1−α)·τ(n)</li>
+        <li>Alpha configurable</li>
+        <li>Gráfico en tiempo real</li>
+      </ul>
+      <span class="home-card-cta">Abrir módulo →</span>
+    </div>
+
+    <!-- Slot para futuro módulo -->
+    <div class="home-card home-card-soon">
+      <div class="home-card-icon">🔒</div>
+      <div class="home-card-num">03</div>
+      <h3>Próximamente</h3>
+      <p>Nuevo módulo en desarrollo. Será agregado en futuras versiones del simulador.</p>
+      <span class="home-card-cta home-card-cta-disabled">En desarrollo</span>
+    </div>
+
+  </div>
+</div><!-- /screen-home -->
+
+<!-- ══════════════════════════════════════════════════
+     MÓDULO 1: PLANIFICACIÓN CLÁSICA
+══════════════════════════════════════════════════ -->
+<div id="screen-scheduler" class="screen hidden">
 <div class="container">
 
-  <!-- ── PANEL: Configuración ── -->
+  <!-- Configuración -->
   <div class="panel">
     <div class="panel-header">Configuración</div>
     <div class="panel-body">
       <div class="controls-row">
-
         <div class="field">
           <label>Nº Procesos</label>
           <input type="number" id="num-procs" min="1" max="10" value="4">
         </div>
-
         <div class="field">
           <label>Algoritmo</label>
           <select id="algorithm">
@@ -38,26 +98,22 @@
             <option value="priority">Prioridad</option>
           </select>
         </div>
-
         <div class="field" id="quantum-field">
           <label>Quantum (ms)</label>
           <input type="number" id="quantum" min="1" value="2">
         </div>
-
         <div class="field">
           <label>Ctx Switch (ms)</label>
           <input type="number" id="ctx-time" min="0" value="1">
         </div>
-
         <button onclick="buildTable()">Generar Tabla</button>
         <button class="primary" onclick="simulate()">▶ Simular</button>
         <button class="danger" onclick="clearResults()">✕ Limpiar</button>
-
       </div>
     </div>
   </div>
 
-  <!-- ── PANEL: Tabla de procesos ── -->
+  <!-- Tabla de procesos -->
   <div class="panel" id="proc-panel">
     <div class="panel-header">Tabla de Procesos</div>
     <div class="panel-body" style="padding:0">
@@ -75,43 +131,27 @@
     </div>
   </div>
 
-  <!-- ── PANEL: Diagrama de Gantt ── -->
+  <!-- Gantt -->
   <div class="panel hidden" id="gantt-panel">
     <div class="panel-header">Diagrama de Gantt</div>
-
-    <!--
-      .gantt-scroll-wrapper permite scroll horizontal si el diagrama
-      es más ancho que la pantalla — las filas nunca colapsan.
-    -->
     <div class="panel-body" style="padding: 28px 14px 10px;">
       <div class="gantt-scroll-wrapper">
         <div class="gantt-inner" id="gantt-rows"></div>
       </div>
     </div>
-
-    <!-- Leyenda de colores -->
     <div class="legend" id="gantt-legend"></div>
-
-    <!-- Métricas resumen -->
     <div class="metrics" id="metrics-bar"></div>
   </div>
 
-  <!-- ── PANEL: Resultados por proceso ── -->
+  <!-- Resultados -->
   <div class="panel hidden" id="results-panel">
     <div class="panel-header">Resultados por Proceso</div>
     <div class="panel-body" style="padding:0">
       <table class="results-table">
         <thead>
           <tr>
-            <th>PID</th>
-            <th>Llegada</th>
-            <th>Ráfaga</th>
-            <th>Prioridad</th>
-            <th>Inicio</th>
-            <th>Fin</th>
-            <th>T. Espera</th>
-            <th>T. Retorno</th>
-            <th>T. Respuesta</th>
+            <th>PID</th><th>Llegada</th><th>Ráfaga</th><th>Prioridad</th>
+            <th>Inicio</th><th>Fin</th><th>T. Espera</th><th>T. Retorno</th><th>T. Respuesta</th>
           </tr>
         </thead>
         <tbody id="results-tbody"></tbody>
@@ -119,7 +159,7 @@
     </div>
   </div>
 
-  <!-- ── PANEL: Traza de ejecución ── -->
+  <!-- Log -->
   <div class="panel hidden" id="log-panel">
     <div class="panel-header">Traza de Ejecución — Cambios de Contexto</div>
     <div class="panel-body" style="padding:0">
@@ -127,15 +167,16 @@
     </div>
   </div>
 
-</div><!-- /container — Sección planificador clásico -->
+</div><!-- /container -->
+</div><!-- /screen-scheduler -->
 
 <!-- ══════════════════════════════════════════════════
-     SECCIÓN ENVEJECIMIENTO (AGING / SJF PREDICTIVO)
+     MÓDULO 2: ENVEJECIMIENTO
 ══════════════════════════════════════════════════ -->
-<div class="aging-section">
+<div id="screen-aging" class="screen hidden aging-section">
 
   <div class="aging-hero">
-    <span class="aging-tag">MÓDULO INDEPENDIENTE</span>
+    <span class="aging-tag">MÓDULO 02</span>
     <h2>Envejecimiento — SJF Predictivo</h2>
     <p>Predicción del tiempo de ráfaga mediante <strong>media exponencial ponderada</strong>.<br>
        Fórmula: <code>τ(n+1) = α · t(n) + (1 − α) · τ(n)</code></p>
@@ -143,36 +184,31 @@
 
   <div class="aging-container">
 
-    <!-- ── CONFIG ── -->
+    <!-- Config -->
     <div class="panel">
       <div class="panel-header">Parámetros</div>
       <div class="panel-body">
         <div class="controls-row">
-
           <div class="field">
             <label>α (Alpha)</label>
             <input type="number" id="ag-alpha" min="0.01" max="1" step="0.01" value="0.5" style="width:80px">
           </div>
-
           <div class="field">
             <label>τ₁ inicial (ms)</label>
             <input type="number" id="ag-tau0" min="0" step="0.1" value="45" style="width:90px">
           </div>
-
           <div class="field">
             <label>Nº Ejecuciones</label>
             <input type="number" id="ag-n" min="1" max="20" value="5" style="width:80px">
           </div>
-
           <button onclick="agingBuildTable()">Generar Tabla</button>
           <button class="primary" onclick="agingSimulate()">▶ Calcular</button>
           <button class="danger" onclick="agingClear()">✕ Limpiar</button>
-
         </div>
       </div>
     </div>
 
-    <!-- ── TABLA DE ENTRADA ── -->
+    <!-- Tabla entrada -->
     <div class="panel">
       <div class="panel-header">Tiempos Reales de Ejecución</div>
       <div class="panel-body" style="padding:0">
@@ -188,7 +224,7 @@
       </div>
     </div>
 
-    <!-- ── TABLA DE RESULTADOS ── -->
+    <!-- Resultados -->
     <div class="panel hidden" id="ag-results-panel">
       <div class="panel-header">Tabla de Predicciones — Paso a Paso</div>
       <div class="panel-body" style="padding:0">
@@ -205,11 +241,10 @@
           <tbody id="ag-results-tbody"></tbody>
         </table>
       </div>
-      <!-- métricas aging -->
       <div class="metrics" id="ag-metrics-bar"></div>
     </div>
 
-    <!-- ── GRÁFICO ── -->
+    <!-- Gráfico -->
     <div class="panel hidden" id="ag-chart-panel">
       <div class="panel-header">Visualización — Tiempo Real vs Predicción</div>
       <div class="panel-body">
@@ -219,13 +254,13 @@
         <div class="ag-chart-legend">
           <span class="ag-leg-dot" style="background:var(--teal)"></span> Tiempo real t(n)
           &nbsp;&nbsp;
-          <span class="ag-leg-dot" style="background:var(--cream-dark, #b8a96e); border:2px solid var(--teal)"></span> Predicción τ(n)
+          <span class="ag-leg-dot" style="background:#E3DFBA; border:2px solid var(--teal)"></span> Predicción τ(n)
         </div>
       </div>
     </div>
 
   </div><!-- /aging-container -->
-</div><!-- /aging-section -->
+</div><!-- /screen-aging -->
 
 <footer class="footer">
   <span>by NumérikaAI · UCASAL · Salta</span>

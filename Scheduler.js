@@ -1,10 +1,46 @@
 /* ============================================================
+   NAVEGACIÓN — Sistema de módulos / pantallas
+   ============================================================ */
+
+const SCREENS = ['screen-home', 'screen-scheduler', 'screen-aging'];
+
+/** Muestra solo la pantalla pedida, oculta las demás */
+function showScreen(id) {
+  SCREENS.forEach(s => {
+    const el = document.getElementById(s);
+    if (el) el.classList.toggle('hidden', s !== id);
+  });
+  // back button: solo visible si no estamos en home
+  const btnBack = document.getElementById('btn-back');
+  if (btnBack) btnBack.classList.toggle('hidden', id === 'screen-home');
+  // scroll al tope
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/** Abre un módulo por nombre */
+function openModule(name) {
+  if (name === 'scheduler') {
+    showScreen('screen-scheduler');
+    // inicializar tabla si no hay filas
+    if (!document.querySelector('#proc-tbody tr')) buildTable();
+  } else if (name === 'aging') {
+    showScreen('screen-aging');
+    if (!document.querySelector('#ag-tbody tr')) agingBuildTable();
+  }
+}
+
+/** Vuelve al menú principal */
+function goHome() {
+  showScreen('screen-home');
+}
+
+/* ============================================================
    SIMULADOR DE PLANIFICACIÓN DE PROCESOS — scheduler.js
    ============================================================ */
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
-const algoSel = () => $('algorithm').value;
+const algoSel = () => { const el = $('algorithm'); return el ? el.value : 'fcfs'; };
 
 function buildTable() {
   const n = parseInt($('num-procs').value) || 4;
@@ -26,9 +62,6 @@ function buildTable() {
     `;
     tbody.appendChild(tr);
   }
-
-  // Limpiar resultados anteriores cada vez que se regenera la tabla
-  clearResults();
 }
 
 function getProcesses() {
@@ -65,10 +98,7 @@ function runFCFS(procs, ctxTime) {
       const nextArr = Math.min(...rem.filter(p => !p.done).map(p => p.arrival));
       timeline.push({ pid: 'idle', start: time, end: nextArr, type: 'idle' });
       log.push(`<span class="run-line">  t=${time}–${nextArr}  [IDLE]</span>`);
-      time = nextArr;
-      // Después de periodos de idle, no hay proceso anterior en CPU
-      lastPid = null;
-      continue;
+      time = nextArr; continue;
     }
 
     // FCFS: primero el que llegó antes.
@@ -102,10 +132,7 @@ function runSJF(procs, ctxTime) {
       const next = Math.min(...rem.filter(p => !p.done).map(p => p.arrival));
       timeline.push({ pid: 'idle', start: time, end: next, type: 'idle' });
       log.push(`<span class="run-line">  t=${time}–${next}  [IDLE]</span>`);
-      time = next;
-      // Después de idle no hay proceso previo en CPU
-      lastPid = null;
-      continue;
+      time = next; continue;
     }
     // Criterio: menor ráfaga → mayor prioridad → menor llegada → menor id
     avail.sort((a, b) => a.burst - b.burst || b.priority - a.priority || a.arrival - b.arrival || a.id - b.id);
@@ -148,10 +175,7 @@ function runRR(procs, ctxTime, quantum) {
       const next = Math.min(...queue.filter(p => !p.done).map(p => p.arrival));
       timeline.push({ pid: 'idle', start: time, end: next, type: 'idle' });
       log.push(`<span class="run-line">  t=${time}–${next}  [IDLE] cola vacía</span>`);
-      time = next;
-      // CPU quedó ociosa; limpiamos estado de proceso previo
-      lastPid = null;
-      enqueue(time); continue;
+      time = next; enqueue(time); continue;
     }
     const p = readyQueue.shift();
     if (p.firstRun < 0) p.firstRun = time;
@@ -183,10 +207,7 @@ function runPriority(procs, ctxTime) {
       const next = Math.min(...rem.filter(p => !p.done).map(p => p.arrival));
       timeline.push({ pid: 'idle', start: time, end: next, type: 'idle' });
       log.push(`<span class="run-line">  t=${time}–${next}  [IDLE]</span>`);
-      time = next;
-      // CPU ociosa: no se consideran cambios de contexto
-      lastPid = null;
-      continue;
+      time = next; continue;
     }
     // Mayor prioridad → menor llegada → menor id (determinista)
     avail.sort((a, b) => b.priority - a.priority || a.arrival - b.arrival || a.id - b.id);
@@ -218,8 +239,6 @@ function runNonPreemptive(sorted, ctxTime, name) {
       timeline.push({ pid: 'idle', start: time, end: next.arrival, type: 'idle' });
       log.push(`<span class="run-line">  t=${time}–${next.arrival}  [IDLE]</span>`);
       time = next.arrival;
-      // Después de un periodo de CPU ociosa, no hay proceso previo
-      lastPid = null;
     }
     if (lastPid !== null && lastPid !== next.pid && ctxTime > 0) {
       timeline.push({ pid: 'ctx', start: time, end: time + ctxTime, type: 'ctx' });
@@ -543,11 +562,17 @@ function simulate() {
 
 // ─── Init ──────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  $('algorithm').addEventListener('change', () => {
-    $('quantum-field').style.display = algoSel() === 'rr' ? '' : 'none';
-    buildTable();
-  });
-  buildTable();
+  // Mostrar pantalla de inicio al cargar
+  showScreen('screen-home');
+
+  // Listener del selector de algoritmo
+  const algoEl = document.getElementById('algorithm');
+  if (algoEl) {
+    algoEl.addEventListener('change', () => {
+      document.getElementById('quantum-field').style.display =
+        algoSel() === 'rr' ? '' : 'none';
+    });
+  }
 });
 
 /* ============================================================
@@ -807,5 +832,4 @@ function agingRenderChart(tReals, taus, alpha) {
 
 function round4(v) { return Math.round(v * 10000) / 10000; }
 
-// Init aging al cargar
-document.addEventListener('DOMContentLoaded', () => { agingBuildTable(); });
+// La tabla de aging se inicializa al abrir el módulo (ver openModule)
