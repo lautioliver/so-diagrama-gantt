@@ -77,10 +77,6 @@ const algoSel = () => { const el = $('algorithm'); return el ? el.value : 'fcfs'
 function buildTable() {
   const n = parseInt($('num-procs').value) || 4;
 
-  // Guard: el elemento puede no estar visible aún
-  const qf = $('quantum-field');
-  if (qf) qf.style.display = algoSel() === 'rr' ? '' : 'none';
-
   const tbody = $('proc-tbody');
   if (!tbody) return;   // Guard: si el módulo no está montado, salir
 
@@ -639,14 +635,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // Mostrar pantalla de inicio al cargar
   showScreen('screen-home');
 
-  // Listener del selector de algoritmo
-  const algoEl = document.getElementById('algorithm');
-  if (algoEl) {
-    algoEl.addEventListener('change', () => {
-      document.getElementById('quantum-field').style.display =
-        algoSel() === 'rr' ? '' : 'none';
-    });
-  }
+  // Listener del selector de algoritmo (quantum siempre visible)
+  // No se necesita ocultar/mostrar quantum-field
 });
 
 /* ============================================================

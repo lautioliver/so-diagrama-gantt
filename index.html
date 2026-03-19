@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CPU SIM</title>
+  <title>CPU SIM — Simulador de Planificación</title>
   <link rel="stylesheet" href="styles.css">
   <!-- Anti-flash: aplicar tema guardado antes de renderizar -->
   <script>
@@ -21,7 +21,7 @@
 ══════════════════════════════════════════════════ -->
 <header>
   <span class="logo">CPU SIM</span>
-  <h1 id="header-title">Métodos Trabajo Práctico N°1</h1>
+  <h1 id="header-title">Simulador de Planificación — Procesador Mononúcleo</h1>
   <div class="header-actions">
     <button class="header-back hidden" id="btn-back" onclick="goHome()">← Volver al menú</button>
     <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Cambiar tema">
@@ -38,7 +38,7 @@
   <div class="home-hero">
     <div class="home-hero-bg"></div>
     <div class="home-hero-content">
-      <p class="home-sub">Sistemas Operativos · UCASAL · Salta · 2026</p>
+      <p class="home-sub">Análisis Numérico · UCASAL · Salta · 2026</p>
       <h2 class="home-title">Seleccioná un módulo</h2>
       <p class="home-desc">Elegí el método que querés simular.<br>Cada módulo es independiente y tiene sus propias herramientas.</p>
     </div>
@@ -48,9 +48,10 @@
 
     <!-- Módulo 1: Planificación clásica -->
     <div class="home-card" onclick="openModule('scheduler')">
+      <div class="home-card-icon">⚙️</div>
       <div class="home-card-num">01</div>
       <h3>Planificación de Procesos</h3>
-      <p>Simulá los algoritmos clásicos en un procesador mononúcleo con diagrama de Gantt interactivo.</p>
+      <p>Simulá los algoritmos clásicos de scheduling en un procesador mononúcleo con diagrama de Gantt interactivo.</p>
       <ul class="home-card-tags">
         <li>FCFS</li>
         <li>SJF</li>
@@ -62,11 +63,14 @@
 
     <!-- Módulo 2: Envejecimiento -->
     <div class="home-card" onclick="openModule('aging')">
+      <div class="home-card-icon">📈</div>
       <div class="home-card-num">02</div>
       <h3>Envejecimiento — SJF Predictivo</h3>
       <p>Predecí tiempos de ráfaga usando la media exponencial ponderada. Visualizá cómo evoluciona la predicción.</p>
       <ul class="home-card-tags">
         <li>τ(n+1) = α·t(n) + (1−α)·τ(n)</li>
+        <li>Alpha configurable</li>
+        <li>Gráfico en tiempo real</li>
       </ul>
       <span class="home-card-cta">Abrir módulo →</span>
     </div>
@@ -75,7 +79,7 @@
     <div class="home-card home-card-soon">
       <div class="home-card-icon">🔒</div>
       <div class="home-card-num">03</div>
-      <h3>Próximamente -> PLANIFICACIÓN EN SISTEMAS DE TIEMPO REAL</h3>
+      <h3>Próximamente</h3>
       <p>Nuevo módulo en desarrollo. Será agregado en futuras versiones del simulador.</p>
       <span class="home-card-cta home-card-cta-disabled">En desarrollo</span>
     </div>
@@ -109,7 +113,7 @@
         </div>
         <div class="field" id="quantum-field">
           <label>Quantum (ms)</label>
-          <input type="number" id="quantum" min="1" value="2">
+          <input type="number" id="quantum" min="1" value="1">
         </div>
         <div class="field">
           <label>Ctx Switch (ms)</label>
@@ -183,6 +187,13 @@
      MÓDULO 2: ENVEJECIMIENTO
 ══════════════════════════════════════════════════ -->
 <div id="screen-aging" class="screen hidden aging-section">
+
+  <div class="aging-hero">
+    <span class="aging-tag">MÓDULO 02</span>
+    <h2>Envejecimiento — SJF Predictivo</h2>
+    <p>Predicción del tiempo de ráfaga mediante <strong>media exponencial ponderada</strong>.<br>
+       Fórmula: <code>τ(n+1) = α · t(n) + (1 − α) · τ(n)</code></p>
+  </div>
 
   <div class="aging-container">
 
@@ -265,7 +276,7 @@
 </div><!-- /screen-aging -->
 
 <footer class="footer">
-  <span>by NumérikaAI · UCASAL · Salta</span>
+  <span>By NumérikaAI · UCASAL · Salta</span>
   <span>Análisis Numérico · 2026</span>
 </footer>
 

@@ -677,7 +677,6 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
 .results-table td { font-size: 12px; }
 
 /* ── Visibility toggles ── */
-#quantum-field { display: none; }
 .hidden        { display: none !important; }
 
 
