@@ -39,7 +39,7 @@ const SCREENS = ['screen-home', 'screen-scheduler', 'screen-aging'];
 /** Muestra solo la pantalla pedida, oculta las demás */
 function showScreen(id) {
   SCREENS.forEach(s => {
-    const el = document.getElementBy  (s);
+    const el = document.getElementById(s);
     if (el) el.classList.toggle('hidden', s !== id);
   });
   // back button: solo visible si no estamos en home
@@ -76,11 +76,14 @@ const algoSel = () => { const el = $('algorithm'); return el ? el.value : 'fcfs'
 
 function buildTable() {
   const n = parseInt($('num-procs').value) || 4;
-  const isPriority = algoSel() === 'priority';
 
-  $('quantum-field').style.display = algoSel() === 'rr' ? '' : 'none';
+  // Guard: el elemento puede no estar visible aún
+  const qf = $('quantum-field');
+  if (qf) qf.style.display = algoSel() === 'rr' ? '' : 'none';
 
   const tbody = $('proc-tbody');
+  if (!tbody) return;   // Guard: si el módulo no está montado, salir
+
   tbody.innerHTML = '';
   for (let i = 0; i < n; i++) {
     const tr = document.createElement('tr');
@@ -109,7 +112,10 @@ function getProcesses() {
 }
 
 function clearResults() {
-  ['gantt-panel', 'results-panel', 'log-panel'].forEach(id => $(id).classList.add('hidden'));
+  ['gantt-panel', 'results-panel', 'log-panel'].forEach(id => {
+    const el = $(id);
+    if (el) el.classList.add('hidden');
+  });
 }
 
 // ─── Algoritmos ────────────────────────────────────────────────────────────
@@ -200,7 +206,6 @@ function runRR(procs, ctxTime, quantum) {
   };
 
   enqueue(0);
-
   while (queue.some(p => !p.done)) {
     if (!readyQueue.length) {
       const next = Math.min(...queue.filter(p => !p.done).map(p => p.arrival));
@@ -218,15 +223,15 @@ function runRR(procs, ctxTime, quantum) {
       time += ctxTime; enqueue(time);
     }
 
-    // ── QUANTUM ESTRICTO ──────────────────────────────────────────
+    // ── QUANTUM ESTRICTO ─────────────────────────────────────────
     // El proceso ejecuta solo lo que necesita (slice), pero el
     // quantum completo es "consumido". Si slice < quantum, el
     // tiempo restante del quantum queda como idle-quantum.
-    const slice       = Math.min(quantum, p.rem);  // tiempo real de ejecución
-    const quantumEnd  = time + quantum;             // fin del quantum completo
-    const runEnd      = time + slice;               // fin de la ejecución real
+    const slice      = Math.min(quantum, p.rem);
+    const runEnd     = time + slice;
+    const quantumEnd = time + quantum;
 
-    // Bloque de ejecución real del proceso
+    // Bloque de ejecución real
     timeline.push({ pid: p.pid, start: time, end: runEnd, type: 'run' });
     log.push(`<span class="run-line">  t=${time}–${runEnd}  [EJECUTANDO] ${p.pid}  slice=${slice}ms  rest=${p.rem - slice}ms  prioridad=${p.priority}</span>`);
 
@@ -237,23 +242,21 @@ function runRR(procs, ctxTime, quantum) {
       p.done = true;
       log.push(`<span class="end-line">  t=${runEnd}  [FIN] ${p.pid}</span>`);
 
-      const idleSlice = quantum - slice;  // tiempo ocioso dentro del quantum
+      const idleSlice = quantum - slice;
       if (idleSlice > 0) {
         timeline.push({ pid: 'idle', start: runEnd, end: quantumEnd, type: 'idle' });
         log.push(`<span class="run-line">  t=${runEnd}–${quantumEnd}  [IDLE-QUANTUM] quantum no consumido (+${idleSlice}ms)</span>`);
       }
-      time = quantumEnd;  // el tiempo avanza al final del quantum completo
-    } else {
-      // Proceso no terminó, usó el quantum completo
       time = quantumEnd;
+    } else {
+      // Quantum consumido completo, proceso sigue pendiente
+      time = quantumEnd;
+      readyQueue.push(p);
     }
 
-    enqueue(time);
     lastPid = p.pid;
-
-    if (p.rem > 0) readyQueue.push(p);
+    enqueue(time);
   }
-
   return { timeline, log };
 }
 
@@ -583,6 +586,12 @@ function renderMetrics(metrics, log) {
 
 // ─── Main ──────────────────────────────────────────────────────────────────
 function simulate() {
+  // Guard: verificar que los elementos del módulo existen
+  if (!$('proc-tbody') || !$('gantt-rows')) {
+    console.error('simulate(): elementos del DOM no encontrados');
+    return;
+  }
+
   const procs = getProcesses();
   if (!procs.length) { alert('Genera la tabla primero.'); return; }
 
@@ -650,6 +659,7 @@ function agingBuildTable() {
   const n     = parseInt($('ag-n').value)    || 5;
   const tau0  = parseFloat($('ag-tau0').value) || 45;
   const tbody = $('ag-tbody');
+  if (!tbody) return;   // Guard: módulo no montado aún
   tbody.innerHTML = '';
 
   for (let i = 1; i <= n; i++) {
@@ -667,7 +677,10 @@ function agingBuildTable() {
 
 /** Limpia resultados del módulo aging */
 function agingClear() {
-  ['ag-results-panel','ag-chart-panel'].forEach(id => $(id).classList.add('hidden'));
+  ['ag-results-panel','ag-chart-panel'].forEach(id => {
+    const el = $(id);
+    if (el) el.classList.add('hidden');
+  });
 }
 
 /** Ejecuta la simulación de envejecimiento y renderiza tabla + gráfico */
