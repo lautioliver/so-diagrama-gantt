@@ -39,7 +39,7 @@ const SCREENS = ['screen-home', 'screen-scheduler', 'screen-aging'];
 /** Muestra solo la pantalla pedida, oculta las demás */
 function showScreen(id) {
   SCREENS.forEach(s => {
-    const el = document.getElementById(s);
+    const el = document.getElementBy  (s);
     if (el) el.classList.toggle('hidden', s !== id);
   });
   // back button: solo visible si no estamos en home
@@ -187,21 +187,20 @@ function runRR(procs, ctxTime, quantum) {
   const timeline = [], log = [];
   const queue = procs.map(p => ({ ...p, rem: p.burst, firstRun: -1, done: false }))
                      .sort((a, b) => a.arrival - b.arrival);
-  log.push(`<span class="hdr">=== ROUND ROBIN — Quantum = ${quantum}ms ===</span>`);
+  log.push(`<span class="hdr">=== ROUND ROBIN — Quantum = ${quantum}ms (estricto) ===</span>`);
 
   let time = 0, lastPid = null;
   const readyQueue = [];
   const arrived = new Set();
 
   const enqueue = t => {
-    // Solo los que llegan EXACTAMENTE en t (nuevos)
     const newArrivals = queue.filter(p => !arrived.has(p.id) && p.arrival <= t && !p.done);
-    // Mayor prioridad entra primero al lote simultáneo; desempate por id original
     newArrivals.sort((a, b) => b.priority - a.priority || a.id - b.id);
     newArrivals.forEach(p => { arrived.add(p.id); readyQueue.push(p); });
   };
 
   enqueue(0);
+
   while (queue.some(p => !p.done)) {
     if (!readyQueue.length) {
       const next = Math.min(...queue.filter(p => !p.done).map(p => p.arrival));
@@ -209,21 +208,52 @@ function runRR(procs, ctxTime, quantum) {
       log.push(`<span class="run-line">  t=${time}–${next}  [IDLE] cola vacía</span>`);
       time = next; enqueue(time); continue;
     }
+
     const p = readyQueue.shift();
     if (p.firstRun < 0) p.firstRun = time;
+
     if (lastPid !== null && lastPid !== p.pid && ctxTime > 0) {
       timeline.push({ pid: 'ctx', start: time, end: time + ctxTime, type: 'ctx' });
       log.push(`<span class="ctx-line">  t=${time}–${time + ctxTime}  [CTX SWITCH] ${lastPid} → ${p.pid}  (+${ctxTime}ms)</span>`);
       time += ctxTime; enqueue(time);
     }
-    const slice = Math.min(quantum, p.rem);
-    const end = time + slice;
-    timeline.push({ pid: p.pid, start: time, end, type: 'run' });
-    log.push(`<span class="run-line">  t=${time}–${end}  [EJECUTANDO] ${p.pid}  slice=${slice}ms  rest=${p.rem - slice}ms  prioridad=${p.priority}</span>`);
-    p.rem -= slice; lastPid = p.pid; time = end; enqueue(time);
+
+    // ── QUANTUM ESTRICTO ──────────────────────────────────────────
+    // El proceso ejecuta solo lo que necesita (slice), pero el
+    // quantum completo es "consumido". Si slice < quantum, el
+    // tiempo restante del quantum queda como idle-quantum.
+    const slice       = Math.min(quantum, p.rem);  // tiempo real de ejecución
+    const quantumEnd  = time + quantum;             // fin del quantum completo
+    const runEnd      = time + slice;               // fin de la ejecución real
+
+    // Bloque de ejecución real del proceso
+    timeline.push({ pid: p.pid, start: time, end: runEnd, type: 'run' });
+    log.push(`<span class="run-line">  t=${time}–${runEnd}  [EJECUTANDO] ${p.pid}  slice=${slice}ms  rest=${p.rem - slice}ms  prioridad=${p.priority}</span>`);
+
+    p.rem -= slice;
+
+    if (p.rem === 0) {
+      // Proceso terminó antes de agotar el quantum
+      p.done = true;
+      log.push(`<span class="end-line">  t=${runEnd}  [FIN] ${p.pid}</span>`);
+
+      const idleSlice = quantum - slice;  // tiempo ocioso dentro del quantum
+      if (idleSlice > 0) {
+        timeline.push({ pid: 'idle', start: runEnd, end: quantumEnd, type: 'idle' });
+        log.push(`<span class="run-line">  t=${runEnd}–${quantumEnd}  [IDLE-QUANTUM] quantum no consumido (+${idleSlice}ms)</span>`);
+      }
+      time = quantumEnd;  // el tiempo avanza al final del quantum completo
+    } else {
+      // Proceso no terminó, usó el quantum completo
+      time = quantumEnd;
+    }
+
+    enqueue(time);
+    lastPid = p.pid;
+
     if (p.rem > 0) readyQueue.push(p);
-    else { p.done = true; log.push(`<span class="end-line">  t=${end}  [FIN] ${p.pid}</span>`); }
   }
+
   return { timeline, log };
 }
 
