@@ -1,15 +1,21 @@
-/* ============================================================
-   SIMULADOR DE PLANIFICACIÓN — styles.css
-   ============================================================ */
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  CPU SIM — styles.css                                           ║
+   ║  Sistema de diseño unificado para todos los módulos             ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
 
-/* ── Constantes siempre fijas ── */
+
+/* ================================================================
+   §1  VARIABLES DE DISEÑO — Constantes y paleta de colores
+   ================================================================ */
+
 :root {
+  /* Colores base */
   --teal:    #6CBDB5;
   --teal-lt: #93CCC6;
   --cream:   #E3DFBA;
   --sage:    #C8D6BF;
 
-  /* paleta de procesos (igual en ambos temas) */
+  /* Paleta de procesos (consistente en ambos temas) */
   --p0: #6CBDB5;
   --p1: #4fa89f;
   --p2: #C8D6BF;
@@ -21,14 +27,20 @@
   --p8: #e8e4c6;
   --p9: #b0c9c4;
 
+  /* Tipografía */
   --mono: 'Courier New', monospace;
   --sans: 'Segoe UI', sans-serif;
 
-  /* transición suave al cambiar tema */
+  /* Transición suave de tema */
   --transition-theme: background 0.25s, color 0.25s, border-color 0.25s;
 }
 
-/* ══ TEMA OSCURO (default) ══ */
+
+/* ================================================================
+   §2  TEMAS — Oscuro (default) y Claro
+   ================================================================ */
+
+/* ── Tema oscuro ── */
 html[data-theme="dark"] {
   --bg:       #111615;
   --surface:  #1a1f1e;
@@ -57,7 +69,7 @@ html[data-theme="dark"] {
   color-scheme: dark;
 }
 
-/* ══ TEMA CLARO ══ */
+/* ── Tema claro ── */
 html[data-theme="light"] {
   --bg:       #f5f3e8;
   --surface:  #fdfcf6;
@@ -87,11 +99,65 @@ html[data-theme="light"] {
 }
 
 
-/* ════════════════════════════════════════════════════════════
-   LAUNCHER — PANTALLA DE INICIO
-════════════════════════════════════════════════════════════ */
+/* ================================================================
+   §3  BASE — Reset y estilos globales
+   ================================================================ */
 
-/* header back button */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  transition: var(--transition-theme);
+}
+
+.hidden { display: none !important; }
+.screen { flex: 1; display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
+
+
+/* ================================================================
+   §4  HEADER
+   ================================================================ */
+
+header {
+  background: var(--header-bg);
+  border-bottom: 2px solid var(--teal);
+  padding: 13px 24px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+header .logo {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--teal);
+  letter-spacing: 3px;
+  border: 1px solid var(--teal);
+  padding: 2px 7px;
+  border-radius: 2px;
+}
+
+header h1 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--cream);
+  letter-spacing: 0.3px;
+}
+
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .header-back {
   margin-left: 0;
   background: transparent;
@@ -105,15 +171,66 @@ html[data-theme="light"] {
   font-family: var(--mono);
   letter-spacing: 0.5px;
 }
+
 .header-back:hover {
   background: rgba(108,189,181,0.15);
   border-color: var(--teal);
   color: var(--cream);
 }
 
-/* Hero del home */
+.theme-toggle {
+  background: transparent;
+  border: 1px solid rgba(108,189,181,0.35);
+  color: var(--teal-lt);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  background: rgba(108,189,181,0.12);
+  border-color: var(--teal);
+  transform: rotate(20deg) scale(1.1);
+  color: var(--cream);
+}
+
+
+/* ================================================================
+   §5  FOOTER
+   ================================================================ */
+
+.footer {
+  background: var(--footer-bg);
+  border-top: 1px solid var(--footer-border);
+  padding: 14px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.footer span:first-child { color: var(--teal); }
+.footer span:last-child  { color: var(--footer-text); }
+
+
+/* ================================================================
+   §6  PANTALLA DE INICIO — LAUNCHER
+   ================================================================ */
+
 #screen-home { flex: 1; display: flex; flex-direction: column; }
 
+/* ── Hero ── */
 .home-hero {
   position: relative;
   min-height: 280px;
@@ -131,18 +248,12 @@ html[data-theme="light"] {
     radial-gradient(ellipse 60% 60% at 20% 50%, rgba(108,189,181,0.12) 0%, transparent 60%),
     radial-gradient(ellipse 40% 40% at 80% 40%, rgba(200,214,191,0.08) 0%, transparent 60%),
     repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 39px,
-      rgba(108,189,181,0.04) 39px,
-      rgba(108,189,181,0.04) 40px
+      0deg, transparent, transparent 39px,
+      rgba(108,189,181,0.04) 39px, rgba(108,189,181,0.04) 40px
     ),
     repeating-linear-gradient(
-      90deg,
-      transparent,
-      transparent 79px,
-      rgba(108,189,181,0.04) 79px,
-      rgba(108,189,181,0.04) 80px
+      90deg, transparent, transparent 79px,
+      rgba(108,189,181,0.04) 79px, rgba(108,189,181,0.04) 80px
     );
 }
 
@@ -176,7 +287,7 @@ html[data-theme="light"] {
   line-height: 1.7;
 }
 
-/* Grid de cards */
+/* ── Grid de cards ── */
 .home-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -215,21 +326,11 @@ html[data-theme="light"] {
   transform: translateY(-4px);
   box-shadow: 0 12px 32px rgba(108,189,181,0.12);
   border-color: var(--teal);
-  background: var(--card-bg);
 }
 
 .home-card:hover::before { opacity: 1; }
 
-.home-card-soon {
-  opacity: 0.45;
-  cursor: default;
-  pointer-events: none;
-}
-
-.home-card-icon {
-  font-size: 28px;
-  line-height: 1;
-}
+.home-card-icon { font-size: 28px; line-height: 1; }
 
 .home-card-num {
   font-family: var(--mono);
@@ -284,52 +385,10 @@ html[data-theme="light"] {
 
 .home-card:hover .home-card-cta { letter-spacing: 1.5px; }
 
-.home-card-cta-disabled {
-  color: var(--muted);
-}
 
-/* Screens — ambos heredan el mismo bg del body */
-.screen { flex: 1; display: flex; flex-direction: column; min-height: 0; background: var(--bg); }
-
-
-* { box-sizing: border-box; margin: 0; padding: 0; }
-
-body {
-  background: var(--bg);
-  color: var(--text);
-  font-family: var(--sans);
-  font-size: 13px;
-  line-height: 1.5;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  transition: var(--transition-theme);
-}
-
-/* ── Header ── */
-header {
-  background: var(--header-bg);
-  border-bottom: 2px solid var(--teal);
-  padding: 13px 24px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-header .logo {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--teal);
-  letter-spacing: 3px;
-  border: 1px solid var(--teal);
-  padding: 2px 7px;
-  border-radius: 2px;
-}
-header h1 {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--cream);
-  letter-spacing: 0.3px;
-}
+/* ================================================================
+   §7  COMPONENTES REUTILIZABLES
+   ================================================================ */
 
 /* ── Layout ── */
 .container {
@@ -347,6 +406,7 @@ header h1 {
   margin-bottom: 16px;
   overflow: hidden;
 }
+
 .panel-header {
   background: var(--surface2);
   border-bottom: 1px solid var(--border);
@@ -360,17 +420,20 @@ header h1 {
   align-items: center;
   gap: 8px;
 }
+
 .panel-header::before { content: '◆'; color: var(--teal); font-size: 8px; }
 .panel-body { padding: 14px; }
 
-/* ── Controls ── */
+/* ── Controles ── */
 .controls-row {
   display: flex;
   gap: 12px;
   align-items: flex-end;
   flex-wrap: wrap;
 }
+
 .field { display: flex; flex-direction: column; gap: 4px; }
+
 label {
   font-size: 10px;
   color: var(--muted);
@@ -378,6 +441,7 @@ label {
   letter-spacing: 0.8px;
   text-transform: uppercase;
 }
+
 input[type=number], select {
   background: var(--input-bg);
   border: 1px solid var(--border);
@@ -390,13 +454,15 @@ input[type=number], select {
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
+
 select { width: 185px; cursor: pointer; }
+
 input[type=number]:focus, select:focus {
   border-color: var(--teal);
   box-shadow: 0 0 0 2px rgba(108,189,181,0.18);
 }
 
-/* ── Buttons ── */
+/* ── Botones ── */
 button {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -410,14 +476,16 @@ button {
   transition: all 0.15s;
   text-transform: uppercase;
 }
+
 button:hover { background: var(--cream); border-color: var(--muted); color: var(--dark); }
 button.primary { background: var(--teal); border-color: var(--teal); color: #fff; font-weight: 600; }
 button.primary:hover { background: #5aada5; }
 button.danger { color: #a09070; border-color: #ccc4a0; }
 button.danger:hover { background: #f0ede0; color: var(--dark); }
 
-/* ── Process Table ── */
+/* ── Tablas ── */
 table { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+
 thead th {
   background: var(--cream);
   border: 1px solid var(--border);
@@ -429,18 +497,41 @@ thead th {
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
 tbody tr:nth-child(odd)  { background: var(--row-odd); }
 tbody tr:nth-child(even) { background: var(--row-even); }
 tbody tr:hover { background: rgba(108,189,181,0.07); }
-tbody td { border: 1px solid var(--border); padding: 5px 10px; text-align: center; }
-tbody td input[type=number] { width: 70px; padding: 3px 6px; text-align: center; border-color: transparent; background: transparent; }
-tbody td input[type=number]:focus { border-color: var(--teal); background: var(--surface); box-shadow: 0 0 0 2px rgba(108,189,181,0.15); }
+
+tbody td {
+  border: 1px solid var(--border);
+  padding: 5px 10px;
+  text-align: center;
+}
+
+tbody td input[type=number] {
+  width: 70px;
+  padding: 3px 6px;
+  text-align: center;
+  border-color: transparent;
+  background: transparent;
+}
+
+tbody td input[type=number]:focus {
+  border-color: var(--teal);
+  background: var(--surface);
+  box-shadow: 0 0 0 2px rgba(108,189,181,0.15);
+}
+
 .pid-cell { color: var(--teal); font-weight: bold; font-size: 13px; }
 
-/* ════════════════════════════════════════════════════════════
-   GANTT — layout basado en posicionamiento absoluto
-   Cada bloque se ubica con left/width exactos → sin colapsamiento
-════════════════════════════════════════════════════════════ */
+.results-table thead th { font-size: 10px; }
+.results-table td { font-size: 12px; }
+
+
+/* ================================================================
+   §8  DIAGRAMA DE GANTT
+   Posicionamiento absoluto: cada bloque con left/width exactos
+   ================================================================ */
 
 /* Wrapper con scroll horizontal */
 .gantt-scroll-wrapper {
@@ -449,20 +540,15 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   padding-bottom: 4px;
 }
 
-/* Bloque interior con ancho fijo calculado en JS */
-.gantt-inner {
-  display: block;
-  position: relative;
-}
+.gantt-inner { display: block; position: relative; }
 
-/* Fila contenedora (label + track) */
+/* Fila (label + track) */
 .gantt-row {
   display: flex;
   align-items: center;
   margin-bottom: 4px;
 }
 
-/* Label izquierdo */
 .gantt-label {
   width: 56px;
   min-width: 56px;
@@ -475,7 +561,7 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   user-select: none;
 }
 
-/* Pista: posición relativa, altura fija, ancho fijo via style */
+/* Pista */
 .gantt-track {
   position: relative;
   height: 34px;
@@ -483,10 +569,10 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   border: 1px solid var(--border);
   background: var(--input-bg);
   border-radius: 3px;
-  overflow: visible;   /* permite que los time-labels queden fuera del borde */
+  overflow: visible;
 }
 
-/* Líneas verticales de cuadrícula */
+/* Líneas de cuadrícula */
 .g-grid {
   position: absolute;
   top: 0; bottom: 0;
@@ -496,7 +582,7 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   pointer-events: none;
 }
 
-/* Bloque de proceso/idle/ctx — posición absoluta dentro de .gantt-track */
+/* Bloque de proceso/idle/ctx */
 .gantt-block {
   position: absolute;
   top: 1px;
@@ -513,18 +599,19 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   transition: filter 0.12s;
   border: none;
 }
+
 .gantt-block:hover { filter: brightness(0.88); }
 
-/* ── Etiquetas de tiempo encima de cada bloque ── */
+/* Etiquetas de tiempo encima del bloque */
 .time-label-wrap {
   position: absolute;
   top: -18px;
-  left: 0;
-  right: 0;
+  left: 0; right: 0;
   display: flex;
   justify-content: space-between;
   pointer-events: none;
 }
+
 .tl {
   font-family: var(--mono);
   font-size: 9px;
@@ -536,16 +623,18 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   user-select: none;
   line-height: 1.2;
 }
+
 .tl-start { transform: translateX(-50%); }
 .tl-end   { transform: translateX(50%);  }
 
-/* ── Eje de tiempo (fila de ticks bajo el header) ── */
+/* Eje temporal */
 .gantt-axis-row {
   position: relative;
   margin-left: 56px;
   height: 18px;
   margin-bottom: 2px;
 }
+
 .axis-tick {
   position: absolute;
   font-family: var(--mono);
@@ -591,13 +680,18 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
 .p8 { background: var(--p8); color: var(--dark); }
 .p9 { background: var(--p9); color: var(--dark); }
 
-/* Separador entre sección CPU y sección por proceso */
+/* Separador CPU / procesos */
 .gantt-separator {
   height: 1px;
   background: var(--border);
   margin: 6px 0 6px 56px;
   opacity: 0.6;
 }
+
+
+/* ================================================================
+   §9  LEYENDA Y MÉTRICAS
+   ================================================================ */
 
 /* ── Leyenda ── */
 .legend {
@@ -612,27 +706,35 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   color: var(--muted);
   align-items: center;
 }
+
 .legend-item { display: flex; align-items: center; gap: 5px; }
+
 .legend-dot {
   width: 10px; height: 10px;
   border-radius: 2px;
   flex-shrink: 0;
 }
-.legend-dot.idle { background: rgba(200,214,191,0.4); border: 1px dashed rgba(122,138,130,0.5); }
-.legend-dot.ctx  {
+
+.legend-dot.idle {
+  background: rgba(200,214,191,0.4);
+  border: 1px dashed rgba(122,138,130,0.5);
+}
+
+.legend-dot.ctx {
   background: repeating-linear-gradient(45deg,
     rgba(122,138,130,0.5) 0px, rgba(122,138,130,0.5) 2px,
     transparent 2px, transparent 4px);
   border: 1px solid rgba(122,138,130,0.5);
 }
 
-/* ── Métricas bar ── */
+/* ── Barra de métricas ── */
 .metrics {
   display: flex;
   flex-wrap: wrap;
   border-top: 1px solid var(--border);
   background: var(--metrics-bg);
 }
+
 .metric {
   display: flex;
   flex-direction: column;
@@ -640,7 +742,9 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   padding: 10px 22px;
   border-right: 1px solid var(--border);
 }
+
 .metric:last-child { border-right: none; }
+
 .metric .m-label {
   font-size: 9px;
   font-family: var(--mono);
@@ -648,6 +752,7 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   text-transform: uppercase;
   letter-spacing: 1px;
 }
+
 .metric .m-value {
   font-size: 18px;
   font-family: var(--mono);
@@ -655,7 +760,40 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   font-weight: 700;
 }
 
-/* ── Log ── */
+.metric .m-detail {
+  font-size: 9px;
+  font-family: var(--mono);
+  color: var(--muted);
+  letter-spacing: 0.3px;
+}
+
+
+/* ── §9.1  Eficiencia — estados de color ── */
+
+/** Eficiencia alta (≥ 80%): destaca en verde teal */
+.metric-efficiency {
+  position: relative;
+  border-left: 2px solid var(--teal);
+  padding-left: 20px;
+}
+
+.metric-efficiency .m-value {
+  font-size: 20px;
+}
+
+.metric-efficiency.eff-high .m-value { color: var(--teal); }
+.metric-efficiency.eff-mid  .m-value { color: var(--cream); }
+.metric-efficiency.eff-low  .m-value { color: #ff5555; }
+
+.metric-efficiency.eff-high { border-left-color: var(--teal); }
+.metric-efficiency.eff-mid  { border-left-color: var(--cream); }
+.metric-efficiency.eff-low  { border-left-color: #ff5555; }
+
+
+/* ================================================================
+   §10  LOG DE EJECUCIÓN
+   ================================================================ */
+
 .log-box {
   background: var(--header-bg);
   padding: 12px 14px;
@@ -666,26 +804,18 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   overflow-y: auto;
   line-height: 2;
 }
+
 .log-box .ctx-line { color: var(--teal-lt); }
 .log-box .run-line { color: var(--sage); }
 .log-box .end-line { color: #90b0a0; font-style: italic; }
 .log-box .sep      { color: #2e3c3a; }
 .log-box .hdr      { color: var(--teal); letter-spacing: 1px; font-weight: bold; }
 
-/* ── Results table ── */
-.results-table thead th { font-size: 10px; }
-.results-table td { font-size: 12px; }
 
-/* ── Visibility toggles ── */
-.hidden        { display: none !important; }
+/* ================================================================
+   §11  MÓDULO 2 — ENVEJECIMIENTO (AGING)
+   ================================================================ */
 
-
-/* ════════════════════════════════════════════════════════════
-   SECCIÓN ENVEJECIMIENTO
-════════════════════════════════════════════════════════════ */
-
-/* ── Aging section: MISMO estilo que el scheduler ── */
-/* Solo define layout y tipografía propia; colores heredados del tema */
 .aging-section {
   background: var(--bg);
   flex: 1;
@@ -747,16 +877,16 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   text-align: left !important;
   padding: 5px 12px !important;
 }
+
 .ag-pred-cell {
   font-family: var(--mono);
   font-weight: 700;
   color: var(--teal) !important;
   font-size: 13px;
 }
+
 .ag-next-row td { color: rgba(108,189,181,0.5) !important; font-style: italic; }
 .ag-next-row .ag-pred-cell { color: var(--teal) !important; font-style: normal; }
-
-/* aging metrics: usa los estilos globales de .metrics */
 
 .ag-chart-wrap {
   width: 100%;
@@ -765,6 +895,7 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   border-radius: 4px;
   padding: 16px;
 }
+
 #ag-canvas { width: 100% !important; height: 280px !important; }
 
 .ag-chart-legend {
@@ -776,9 +907,9 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   font-size: 11px;
   color: var(--muted);
 }
-.ag-leg-dot { display:inline-block; width:10px; height:10px; border-radius:50%; }
 
-/* ── ag input row ── */
+.ag-leg-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; }
+
 .ag-td-input input[type=number] {
   width: 80px;
   padding: 3px 6px;
@@ -786,52 +917,30 @@ tbody td input[type=number]:focus { border-color: var(--teal); background: var(-
   background: transparent;
   border-color: transparent;
 }
+
 .ag-td-input input[type=number]:focus {
   border-color: var(--teal);
   background: var(--input-bg);
 }
 
 
+/* ================================================================
+   §12  MÓDULO 3 — EFICIENCIA Y SOBRECARGA
+   ================================================================ */
 
-/* ── Header actions group ── */
-.header-actions {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+#ov-canvas {
+  width: 100%;
+  height: 280px;
+  background: #1a1f1e;
+  border-radius: 4px;
+  display: block;
 }
 
-/* ── Theme toggle button ── */
-.theme-toggle {
-  background: transparent;
-  border: 1px solid rgba(108,189,181,0.35);
-  color: var(--teal-lt);
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  padding: 0;
-  flex-shrink: 0;
-}
 
-.theme-toggle:hover {
-  background: rgba(108,189,181,0.12);
-  border-color: var(--teal);
-  transform: rotate(20deg) scale(1.1);
-  color: var(--cream);
-}
+/* ================================================================
+   §13  OVERRIDES POR TEMA — Light mode
+   ================================================================ */
 
-/* ── header-back margin reset (now inside header-actions) ── */
-.header-back {
-  margin-left: 0;
-}
-
-/* ── Light mode overrides for elements that need extra care ── */
 html[data-theme="light"] .log-box {
   background: var(--log-bg);
   color: var(--log-text);
@@ -841,17 +950,23 @@ html[data-theme="light"] header {
   background: var(--header-bg);
 }
 
-/* home-hero siempre usa header-bg independientemente del tema — definido en .home-hero base */
+/* Hero siempre oscuro en ambos temas */
+.home-hero { background: var(--header-bg); }
+.home-hero-content .home-title { color: var(--cream); }
+.home-hero-content .home-sub   { color: var(--teal-lt); }
+.home-hero-content .home-desc  { color: #93a89c; }
 
 html[data-theme="light"] .home-card {
   background: var(--card-bg);
   border-color: var(--border);
   color: var(--text);
 }
+
 html[data-theme="light"] .home-card h3 { color: var(--text); }
 html[data-theme="light"] .home-card p  { color: var(--muted); }
 
 html[data-theme="light"] .panel-header {
+  background: var(--surface2);
   color: var(--muted);
 }
 
@@ -867,52 +982,17 @@ html[data-theme="light"] .gantt-track {
 }
 
 html[data-theme="light"] .tl { background: var(--surface); }
-
 html[data-theme="light"] .axis-tick { color: var(--muted); }
+html[data-theme="light"] .legend { background: var(--surface); }
 
-html[data-theme="light"] .legend {
-  background: var(--surface);
-}
-
-/* ══════════════════════════════════════════════════
-   OVERRIDES MÍNIMOS POR TEMA
-   Solo para el home-hero que siempre debe ser oscuro
-══════════════════════════════════════════════════ */
-
-/* home-hero siempre oscuro en ambos temas */
-.home-hero { background: var(--header-bg); }
-.home-hero-content .home-title { color: var(--cream); }
-.home-hero-content .home-sub   { color: var(--teal-lt); }
-.home-hero-content .home-desc  { color: #93a89c; }
-
-/* light: panel-header con surface2 para contraste */
-html[data-theme="light"] .panel-header {
-  background: var(--surface2);
-  color: var(--muted);
-}
-/* light: filas de tabla */
 html[data-theme="light"] tbody tr:nth-child(odd)  { background: var(--surface); }
 html[data-theme="light"] tbody tr:nth-child(even) { background: var(--surface2); }
 
 
-/* ── Footer ── */
-.footer {
-  background: var(--footer-bg);
-  border-top: 1px solid var(--footer-border);
-  padding: 14px 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
+/* ================================================================
+   §14  SCROLLBAR
+   ================================================================ */
 
-.footer span:first-child { color: var(--teal); }
-.footer span:last-child  { color: var(--footer-text); }
-
-/* ── Scrollbar ── */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }

@@ -1,9 +1,23 @@
-/* ============================================================
-   TEMA — dark / light con localStorage
-   ============================================================ */
+/* ╔══════════════════════════════════════════════════════════════════╗
+   ║  CPU SIM — Simulador de Planificación de Procesos               ║
+   ║  Autor: NumérikaAI · UCASAL · Salta · 2026                      ║
+   ║                                                                  ║
+   ║  Módulos:                                                        ║
+   ║    1. Planificación clásica (FCFS, SJF, RR, Prioridad)          ║
+   ║    2. Envejecimiento — SJF Predictivo (Aging)                    ║
+   ║    3. Eficiencia y Sobrecarga                                    ║
+   ╚══════════════════════════════════════════════════════════════════╝ */
+
+/* ================================================================
+   §1  TEMA — dark / light con localStorage
+   ================================================================ */
 
 const THEME_KEY = 'cpusim-theme';
 
+/**
+ * Aplica un tema al documento y actualiza el icono del toggle.
+ * @param {'dark'|'light'} theme - Tema a aplicar.
+ */
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   const icon = document.getElementById('theme-toggle');
@@ -14,13 +28,14 @@ function applyTheme(theme) {
   localStorage.setItem(THEME_KEY, theme);
 }
 
+/** Alterna entre tema oscuro y claro. */
 function toggleTheme() {
   const current = document.documentElement.getAttribute('data-theme') || 'dark';
   applyTheme(current === 'dark' ? 'light' : 'dark');
 }
 
+/** Inicializa el tema usando preferencia guardada o la del sistema. */
 function initTheme() {
-  // Respetar preferencia del sistema si no hay preferencia guardada
   const saved = localStorage.getItem(THEME_KEY);
   if (saved) {
     applyTheme(saved);
@@ -30,55 +45,80 @@ function initTheme() {
   }
 }
 
-/* ============================================================
-   NAVEGACIÓN — Sistema de módulos / pantallas
-   ============================================================ */
 
-const SCREENS = ['screen-home', 'screen-scheduler', 'screen-aging'];
+/* ================================================================
+   §2  NAVEGACIÓN — Sistema de pantallas / módulos
+   ================================================================ */
 
-/** Muestra solo la pantalla pedida, oculta las demás */
+/** IDs de todas las pantallas registradas en la app */
+const SCREENS = ['screen-home', 'screen-scheduler', 'screen-aging', 'screen-overload'];
+
+/**
+ * Muestra solo la pantalla indicada y oculta las demás.
+ * @param {string} id - ID del elemento-pantalla a mostrar.
+ */
 function showScreen(id) {
   SCREENS.forEach(s => {
     const el = document.getElementById(s);
     if (el) el.classList.toggle('hidden', s !== id);
   });
-  // back button: solo visible si no estamos en home
+  // Botón "volver": visible solo fuera del home
   const btnBack = document.getElementById('btn-back');
   if (btnBack) btnBack.classList.toggle('hidden', id === 'screen-home');
-  // scroll al tope
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-/** Abre un módulo por nombre */
+/**
+ * Abre un módulo por nombre y prepara su tabla si es necesario.
+ * @param {'scheduler'|'aging'|'overload'} name
+ */
 function openModule(name) {
   if (name === 'scheduler') {
     showScreen('screen-scheduler');
-    // inicializar tabla si no hay filas
     if (!document.querySelector('#proc-tbody tr')) buildTable();
   } else if (name === 'aging') {
     showScreen('screen-aging');
     if (!document.querySelector('#ag-tbody tr')) agingBuildTable();
+  } else if (name === 'overload') {
+    showScreen('screen-overload');
+    overloadBuildTable();
   }
 }
 
-/** Vuelve al menú principal */
+/** Vuelve al menú principal. */
 function goHome() {
   showScreen('screen-home');
 }
 
-/* ============================================================
-   SIMULADOR DE PLANIFICACIÓN DE PROCESOS — scheduler.js
-   ============================================================ */
 
-// ─── Helpers ───────────────────────────────────────────────────────────────
+/* ================================================================
+   §3  UTILIDADES GENERALES
+   ================================================================ */
+
+/** Atajo para document.getElementById */
 const $ = id => document.getElementById(id);
+
+/** Devuelve el valor actual del selector de algoritmo. */
 const algoSel = () => { const el = $('algorithm'); return el ? el.value : 'fcfs'; };
 
+/** Redondea a 4 decimales para visualización. */
+function round4(v) { return Math.round(v * 10000) / 10000; }
+
+
+/* ================================================================
+   §4  MÓDULO 1 — PLANIFICACIÓN CLÁSICA
+   ================================================================ */
+
+/* ── 4.1  Tabla de entrada ─────────────────────────────────────── */
+
+/**
+ * Genera la tabla de procesos según la cantidad indicada en #num-procs.
+ * Cada fila incluye PID, llegada, ráfaga y prioridad.
+ */
 function buildTable() {
   const n = parseInt($('num-procs').value) || 4;
-
   const tbody = $('proc-tbody');
-  if (!tbody) return;   // Guard: si el módulo no está montado, salir
+  if (!tbody) return;
 
   tbody.innerHTML = '';
   for (let i = 0; i < n; i++) {
@@ -95,6 +135,10 @@ function buildTable() {
   }
 }
 
+/**
+ * Lee los procesos de la tabla y devuelve un arreglo de objetos.
+ * @returns {Array<{id:number, pid:string, arrival:number, burst:number, priority:number}>}
+ */
 function getProcesses() {
   return Array.from($('proc-tbody').querySelectorAll('tr')).map((r, i) => ({
     id:       i,
@@ -107,6 +151,7 @@ function getProcesses() {
   }));
 }
 
+/** Oculta los paneles de resultados del scheduler. */
 function clearResults() {
   ['gantt-panel', 'results-panel', 'log-panel'].forEach(id => {
     const el = $(id);
@@ -114,29 +159,34 @@ function clearResults() {
   });
 }
 
-// ─── Algoritmos ────────────────────────────────────────────────────────────
 
+/* ── 4.2  Algoritmos de planificación ──────────────────────────── */
+
+/**
+ * FCFS — First Come First Served.
+ * Desempate de llegada simultánea: mayor prioridad primero.
+ * @param {Array} procs  - Lista de procesos.
+ * @param {number} ctxTime - Tiempo de cambio de contexto (ms).
+ * @returns {{timeline: Array, log: Array}}
+ */
 function runFCFS(procs, ctxTime) {
   const timeline = [], log = [];
   const rem = procs.map(p => ({ ...p, done: false }));
   let time = 0, lastPid = null;
+
   log.push(`<span class="hdr">=== FCFS — First Come First Served ===</span>`);
   log.push(`<span class="hdr">   (desempate de llegada simultánea: mayor prioridad primero)</span>`);
 
   while (rem.some(p => !p.done)) {
-    // Procesos disponibles: ya llegaron
     const avail = rem.filter(p => !p.done && p.arrival <= time);
 
     if (!avail.length) {
-      // CPU ociosa: saltar al siguiente proceso
       const nextArr = Math.min(...rem.filter(p => !p.done).map(p => p.arrival));
       timeline.push({ pid: 'idle', start: time, end: nextArr, type: 'idle' });
       log.push(`<span class="run-line">  t=${time}–${nextArr}  [IDLE]</span>`);
       time = nextArr; continue;
     }
 
-    // FCFS: primero el que llegó antes.
-    // Si llegaron al mismo tiempo → mayor prioridad → menor id (orden original)
     avail.sort((a, b) => a.arrival - b.arrival || b.priority - a.priority || a.id - b.id);
     const p = avail[0];
 
@@ -145,6 +195,7 @@ function runFCFS(procs, ctxTime) {
       log.push(`<span class="ctx-line">  t=${time}–${time + ctxTime}  [CTX SWITCH] ${lastPid} → ${p.pid}  (+${ctxTime}ms)</span>`);
       time += ctxTime;
     }
+
     const end = time + p.burst;
     timeline.push({ pid: p.pid, start: time, end, type: 'run' });
     log.push(`<span class="run-line">  t=${time}–${end}  [EJECUTANDO] ${p.pid}  llegada=${p.arrival}  ráfaga=${p.burst}ms  prioridad=${p.priority}</span>`);
@@ -154,10 +205,15 @@ function runFCFS(procs, ctxTime) {
   return { timeline, log };
 }
 
+/**
+ * SJF — Shortest Job First (No Preemptivo).
+ * Criterio: menor ráfaga → mayor prioridad → menor llegada → menor id.
+ */
 function runSJF(procs, ctxTime) {
   const timeline = [], log = [];
   const rem = procs.map(p => ({ ...p, done: false }));
   let time = 0, lastPid = null;
+
   log.push(`<span class="hdr">=== SJF — Trabajo Corto Primero (No Preemptivo) ===</span>`);
 
   while (rem.some(p => !p.done)) {
@@ -168,14 +224,16 @@ function runSJF(procs, ctxTime) {
       log.push(`<span class="run-line">  t=${time}–${next}  [IDLE]</span>`);
       time = next; continue;
     }
-    // Criterio: menor ráfaga → mayor prioridad → menor llegada → menor id
+
     avail.sort((a, b) => a.burst - b.burst || b.priority - a.priority || a.arrival - b.arrival || a.id - b.id);
     const p = avail[0];
+
     if (lastPid !== null && lastPid !== p.pid && ctxTime > 0) {
       timeline.push({ pid: 'ctx', start: time, end: time + ctxTime, type: 'ctx' });
       log.push(`<span class="ctx-line">  t=${time}–${time + ctxTime}  [CTX SWITCH] ${lastPid} → ${p.pid}  (+${ctxTime}ms)</span>`);
       time += ctxTime;
     }
+
     const end = time + p.burst;
     timeline.push({ pid: p.pid, start: time, end, type: 'run' });
     log.push(`<span class="run-line">  t=${time}–${end}  [EJECUTANDO] ${p.pid}  ráfaga=${p.burst}ms  prioridad=${p.priority}</span>`);
@@ -185,16 +243,23 @@ function runSJF(procs, ctxTime) {
   return { timeline, log };
 }
 
+/**
+ * Round Robin — Turno Circular con quantum estricto.
+ * Si el proceso termina antes del quantum, el tiempo restante se marca como idle.
+ * @param {number} quantum - Quantum de tiempo (ms).
+ */
 function runRR(procs, ctxTime, quantum) {
   const timeline = [], log = [];
   const queue = procs.map(p => ({ ...p, rem: p.burst, firstRun: -1, done: false }))
                      .sort((a, b) => a.arrival - b.arrival);
+
   log.push(`<span class="hdr">=== ROUND ROBIN — Quantum = ${quantum}ms (estricto) ===</span>`);
 
   let time = 0, lastPid = null;
   const readyQueue = [];
   const arrived = new Set();
 
+  /** Encola procesos recién llegados al tiempo t */
   const enqueue = t => {
     const newArrivals = queue.filter(p => !arrived.has(p.id) && p.arrival <= t && !p.done);
     newArrivals.sort((a, b) => b.priority - a.priority || a.id - b.id);
@@ -219,22 +284,17 @@ function runRR(procs, ctxTime, quantum) {
       time += ctxTime; enqueue(time);
     }
 
-    // ── QUANTUM ESTRICTO ─────────────────────────────────────────
-    // El proceso ejecuta solo lo que necesita (slice), pero el
-    // quantum completo es "consumido". Si slice < quantum, el
-    // tiempo restante del quantum queda como idle-quantum.
+    // Quantum estricto: slice real + idle sobrante
     const slice      = Math.min(quantum, p.rem);
     const runEnd     = time + slice;
     const quantumEnd = time + quantum;
 
-    // Bloque de ejecución real
     timeline.push({ pid: p.pid, start: time, end: runEnd, type: 'run' });
     log.push(`<span class="run-line">  t=${time}–${runEnd}  [EJECUTANDO] ${p.pid}  slice=${slice}ms  rest=${p.rem - slice}ms  prioridad=${p.priority}</span>`);
 
     p.rem -= slice;
 
     if (p.rem === 0) {
-      // Proceso terminó antes de agotar el quantum
       p.done = true;
       log.push(`<span class="end-line">  t=${runEnd}  [FIN] ${p.pid}</span>`);
 
@@ -245,7 +305,6 @@ function runRR(procs, ctxTime, quantum) {
       }
       time = quantumEnd;
     } else {
-      // Quantum consumido completo, proceso sigue pendiente
       time = quantumEnd;
       readyQueue.push(p);
     }
@@ -256,10 +315,14 @@ function runRR(procs, ctxTime, quantum) {
   return { timeline, log };
 }
 
+/**
+ * Prioridad — No Preemptivo (número mayor = mayor prioridad).
+ */
 function runPriority(procs, ctxTime) {
   const timeline = [], log = [];
   const rem = procs.map(p => ({ ...p, done: false }));
   let time = 0, lastPid = null;
+
   log.push(`<span class="hdr">=== PRIORIDAD (No Preemptivo — número mayor = mayor prioridad) ===</span>`);
 
   while (rem.some(p => !p.done)) {
@@ -270,14 +333,16 @@ function runPriority(procs, ctxTime) {
       log.push(`<span class="run-line">  t=${time}–${next}  [IDLE]</span>`);
       time = next; continue;
     }
-    // Mayor prioridad → menor llegada → menor id (determinista)
+
     avail.sort((a, b) => b.priority - a.priority || a.arrival - b.arrival || a.id - b.id);
     const p = avail[0];
+
     if (lastPid !== null && lastPid !== p.pid && ctxTime > 0) {
       timeline.push({ pid: 'ctx', start: time, end: time + ctxTime, type: 'ctx' });
       log.push(`<span class="ctx-line">  t=${time}–${time + ctxTime}  [CTX SWITCH] ${lastPid} → ${p.pid}  (+${ctxTime}ms)</span>`);
       time += ctxTime;
     }
+
     const end = time + p.burst;
     timeline.push({ pid: p.pid, start: time, end, type: 'run' });
     log.push(`<span class="run-line">  t=${time}–${end}  [EJECUTANDO] ${p.pid}  prioridad=${p.priority}  ráfaga=${p.burst}ms</span>`);
@@ -287,35 +352,15 @@ function runPriority(procs, ctxTime) {
   return { timeline, log };
 }
 
-function runNonPreemptive(sorted, ctxTime, name) {
-  const timeline = [], log = [];
-  let time = 0, lastPid = null;
-  const rem = sorted.map(p => ({ ...p, done: false }));
-  log.push(`<span class="hdr">=== ${name} ===</span>`);
 
-  while (rem.some(p => !p.done)) {
-    const next = rem.find(p => !p.done);
-    if (!next) break;
-    if (next.arrival > time) {
-      timeline.push({ pid: 'idle', start: time, end: next.arrival, type: 'idle' });
-      log.push(`<span class="run-line">  t=${time}–${next.arrival}  [IDLE]</span>`);
-      time = next.arrival;
-    }
-    if (lastPid !== null && lastPid !== next.pid && ctxTime > 0) {
-      timeline.push({ pid: 'ctx', start: time, end: time + ctxTime, type: 'ctx' });
-      log.push(`<span class="ctx-line">  t=${time}–${time + ctxTime}  [CTX SWITCH] ${lastPid} → ${next.pid}  (+${ctxTime}ms)</span>`);
-      time += ctxTime;
-    }
-    const end = time + next.burst;
-    timeline.push({ pid: next.pid, start: time, end, type: 'run' });
-    log.push(`<span class="run-line">  t=${time}–${end}  [EJECUTANDO] ${next.pid}  ráfaga=${next.burst}ms  prioridad=${next.priority}</span>`);
-    log.push(`<span class="end-line">  t=${end}  [FIN] ${next.pid}</span>`);
-    next.done = true; lastPid = next.pid; time = end;
-  }
-  return { timeline, log };
-}
+/* ── 4.3  Métricas por proceso ─────────────────────────────────── */
 
-// ─── Métricas ──────────────────────────────────────────────────────────────
+/**
+ * Calcula métricas individuales por proceso a partir del timeline.
+ * @param {Array} procs    - Procesos originales.
+ * @param {Array} timeline - Línea de tiempo resultante.
+ * @returns {Array<{pid, arrival, burst, priority, firstRun, finish, waitTime, turnaround, response}>}
+ */
 function computeMetrics(procs, timeline) {
   return procs.map(p => {
     const runs = timeline.filter(b => b.pid === p.pid && b.type === 'run');
@@ -333,11 +378,41 @@ function computeMetrics(procs, timeline) {
   }).filter(Boolean);
 }
 
-// ─── Render Gantt ──────────────────────────────────────────────────────────
+/**
+ * Calcula la eficiencia del CPU para la simulación actual.
+ * 
+ * Fórmula:  η = (Σ duración de bloques de color / Tiempo total) × 100
+ * 
+ * "Bloques de color" = bloques de tipo 'run' (ejecución efectiva).
+ * "Tiempo total"     = incluye idle + ctx switch + run (todo el timeline).
+ *
+ * @param {Array} timeline - Línea de tiempo resultante de la simulación.
+ * @returns {{colorTime: number, totalTime: number, efficiency: number}}
+ */
+function computeEfficiency(timeline) {
+  if (!timeline.length) return { colorTime: 0, totalTime: 0, efficiency: 0 };
 
+  const totalTime = Math.max(...timeline.map(b => b.end));
+  const colorTime = timeline
+    .filter(b => b.type === 'run')
+    .reduce((sum, b) => sum + (b.end - b.start), 0);
+
+  const efficiency = totalTime > 0 ? (colorTime / totalTime) * 100 : 0;
+  return { colorTime, totalTime, efficiency };
+}
+
+
+/* ── 4.4  Renderizado del Gantt ────────────────────────────────── */
+
+/** Paleta de clases CSS para colorear procesos */
 const PID_COLORS = ['p0','p1','p2','p3','p4','p5','p6','p7','p8','p9'];
 const pidMap = {};
 
+/**
+ * Devuelve la clase CSS de color para un PID.
+ * @param {string} pid
+ * @returns {string}
+ */
 function colorFor(pid) {
   if (pid === 'idle') return 'idle';
   if (pid === 'ctx')  return 'ctx';
@@ -346,15 +421,15 @@ function colorFor(pid) {
 }
 
 /**
- * Dibuja el Gantt usando posicionamiento absoluto:
- * cada bloque se coloca con left = start*PX y width = (end-start)*PX
- * → nunca colapsa, sin importar la cantidad de procesos o tiempo total.
+ * Dibuja el diagrama de Gantt usando posicionamiento absoluto.
+ * Cada bloque se ubica con left = start * PX y width = (end-start) * PX.
+ * @param {Array}  timeline - Bloques del timeline.
+ * @param {Object} procMap  - Mapa pid → proceso para tooltips.
  */
 function renderGantt(timeline, procMap) {
   const total = Math.max(...timeline.map(b => b.end));
-  // px por unidad de tiempo: mínimo 28px, máximo 80px
   const PX = Math.max(28, Math.min(80, Math.floor(1100 / total)));
-  const trackW = total * PX; // ancho total de pista en px
+  const trackW = total * PX;
 
   const container = $('gantt-rows');
   container.innerHTML = '';
@@ -362,9 +437,8 @@ function renderGantt(timeline, procMap) {
   // ── Eje temporal ──
   const axisRow = document.createElement('div');
   axisRow.className = 'gantt-axis-row';
-  axisRow.style.width = (trackW + 56) + 'px';  // 56px = label width
+  axisRow.style.width = (trackW + 56) + 'px';
 
-  // mostrar tick en cada unidad o cada N unidades si es muy largo
   const tickStep = total <= 30 ? 1 : total <= 60 ? 2 : Math.ceil(total / 30);
   const shownTicks = new Set();
 
@@ -397,23 +471,30 @@ function renderGantt(timeline, procMap) {
   renderLegend(pids);
 }
 
+/**
+ * Agrega un tick numérico al eje temporal.
+ * @param {HTMLElement} parent
+ * @param {number} t  - Valor de tiempo.
+ * @param {number} PX - Píxeles por unidad.
+ */
 function addAxisTick(parent, t, PX) {
   const tick = document.createElement('span');
   tick.className = 'axis-tick';
-  tick.style.left = (56 + t * PX) + 'px';  // 56px = label offset
+  tick.style.left = (56 + t * PX) + 'px';
   tick.textContent = t;
   parent.appendChild(tick);
 }
 
 /**
- * Construye una fila del Gantt.
- * @param {string}      label     - texto a la izquierda
- * @param {Array}       timeline  - todos los bloques
- * @param {string|null} filterPid - si no null, solo colorea ese pid
- * @param {number}      PX        - píxeles por unidad de tiempo
- * @param {number}      trackW    - ancho total de pista
- * @param {number}      total     - tiempo total
- * @param {number}      tickStep  - paso entre ticks
+ * Construye una fila del diagrama de Gantt (CPU o individual).
+ * @param {string}      label     - Texto a la izquierda.
+ * @param {Array}       timeline  - Todos los bloques.
+ * @param {string|null} filterPid - Si no null, solo colorea ese PID.
+ * @param {number}      PX        - Píxeles por unidad de tiempo.
+ * @param {number}      trackW    - Ancho total de la pista (px).
+ * @param {number}      total     - Tiempo total de la simulación.
+ * @param {number}      tickStep  - Paso entre ticks de la cuadrícula.
+ * @param {Object}      procMap   - Mapa pid → proceso.
  */
 function buildRow(label, timeline, filterPid, PX, trackW, total, tickStep, procMap = {}) {
   const row = document.createElement('div');
@@ -430,17 +511,15 @@ function buildRow(label, timeline, filterPid, PX, trackW, total, tickStep, procM
   track.className = 'gantt-track';
   track.style.width = trackW + 'px';
 
-  // Líneas de cuadrícula verticales
-  const gridStep = tickStep;
-  for (let t = 0; t <= total; t += gridStep) {
+  // Líneas de cuadrícula
+  for (let t = 0; t <= total; t += tickStep) {
     const gl = document.createElement('div');
     gl.className = 'g-grid';
     gl.style.left = (t * PX) + 'px';
     track.appendChild(gl);
   }
 
-  // Registrar qué valores de tiempo ya tienen etiqueta visible en esta fila
-  // para evitar solapamiento de time-labels
+  // Registro de tiempos ya etiquetados (anti-solapamiento)
   const labeledTimes = new Set();
 
   timeline.forEach(b => {
@@ -452,9 +531,8 @@ function buildRow(label, timeline, filterPid, PX, trackW, total, tickStep, procM
     block.style.left  = x + 'px';
     block.style.width = w + 'px';
 
-    // Color / clase
+    // Asignación de color/clase
     if (filterPid === null) {
-      // Fila CPU: todo visible
       block.classList.add(colorFor(b.pid));
       if (w > 22) block.textContent = b.type === 'idle' ? '…' : b.type === 'ctx' ? 'CTX' : b.pid;
     } else {
@@ -466,13 +544,13 @@ function buildRow(label, timeline, filterPid, PX, trackW, total, tickStep, procM
       }
     }
 
+    // Tooltip
     const procInfo = procMap[b.pid] || null;
     block.title = b.type === 'run'
       ? `${b.pid}  [${b.start} → ${b.end}]  duración=${b.end - b.start}ms  prioridad=${procInfo ? procInfo.priority : '-'}`
       : `${b.pid}  [${b.start} → ${b.end}]  duración=${b.end - b.start}ms`;
 
-    // ── Time-labels encima del bloque ──
-    // Solo mostrar si el bloque es "relevante" (no idle de fila individual)
+    // Time-labels encima del bloque
     const showLabels = filterPid === null
       ? (b.type === 'run' || b.type === 'ctx')
       : (b.pid === filterPid && b.type === 'run');
@@ -481,7 +559,6 @@ function buildRow(label, timeline, filterPid, PX, trackW, total, tickStep, procM
       const wrap = document.createElement('div');
       wrap.className = 'time-label-wrap';
 
-      // Label de inicio
       if (!labeledTimes.has(b.start)) {
         const ts = document.createElement('span');
         ts.className = 'tl tl-start';
@@ -492,7 +569,6 @@ function buildRow(label, timeline, filterPid, PX, trackW, total, tickStep, procM
         labeledTimes.add(b.start);
       }
 
-      // Label de fin
       if (!labeledTimes.has(b.end)) {
         const te = document.createElement('span');
         te.className = 'tl tl-end';
@@ -513,11 +589,11 @@ function buildRow(label, timeline, filterPid, PX, trackW, total, tickStep, procM
   return row;
 }
 
+/** Renderiza la leyenda del Gantt (colores + idle + ctx). */
 function renderLegend(pids) {
   const leg = $('gantt-legend');
   if (!leg) return;
-  leg.innerHTML =
-    '<span style="color:var(--muted);font-size:10px;font-family:var(--mono)">LEYENDA:</span>';
+  leg.innerHTML = '<span style="color:var(--muted);font-size:10px;font-family:var(--mono)">LEYENDA:</span>';
 
   pids.forEach(pid => {
     const item = document.createElement('div');
@@ -531,20 +607,21 @@ function renderLegend(pids) {
     leg.appendChild(item);
   });
 
-  // idle
   const idleItem = document.createElement('div');
   idleItem.className = 'legend-item';
   idleItem.innerHTML = '<div class="legend-dot idle"></div><span>IDLE</span>';
   leg.appendChild(idleItem);
 
-  // ctx
   const ctxItem = document.createElement('div');
   ctxItem.className = 'legend-item';
   ctxItem.innerHTML = '<div class="legend-dot ctx"></div><span>CTX SWITCH</span>';
   leg.appendChild(ctxItem);
 }
 
-// ─── Render Results ────────────────────────────────────────────────────────
+
+/* ── 4.5  Tablas de resultados y métricas ──────────────────────── */
+
+/** Renderiza la tabla detallada de resultados por proceso. */
 function renderResults(metrics) {
   const tbody = $('results-tbody');
   tbody.innerHTML = '';
@@ -565,24 +642,59 @@ function renderResults(metrics) {
   });
 }
 
-function renderMetrics(metrics, log) {
+/**
+ * Renderiza la barra de métricas resumen (promedios + eficiencia).
+ * @param {Array}  metrics    - Métricas por proceso.
+ * @param {Array}  log        - Log de ejecución (para contar ctx switches).
+ * @param {Object} efficiency - Resultado de computeEfficiency().
+ */
+function renderMetrics(metrics, log, efficiency) {
   const n = metrics.length;
   const avgWait = (metrics.reduce((s, m) => s + m.waitTime,   0) / n).toFixed(2);
   const avgTA   = (metrics.reduce((s, m) => s + m.turnaround, 0) / n).toFixed(2);
   const avgResp = (metrics.reduce((s, m) => s + m.response,   0) / n).toFixed(2);
   const ctxCount = log.filter(l => l.includes('CTX SWITCH')).length;
 
+  // Elegir color según nivel de eficiencia
+  let effClass = '';
+  if      (efficiency.efficiency >= 80) effClass = 'eff-high';
+  else if (efficiency.efficiency >= 50) effClass = 'eff-mid';
+  else                                  effClass = 'eff-low';
+
   $('metrics-bar').innerHTML = `
-    <div class="metric"><span class="m-label">Espera Prom.</span><span class="m-value">${avgWait} ms</span></div>
-    <div class="metric"><span class="m-label">Retorno Prom.</span><span class="m-value">${avgTA} ms</span></div>
-    <div class="metric"><span class="m-label">Respuesta Prom.</span><span class="m-value">${avgResp} ms</span></div>
-    <div class="metric"><span class="m-label">Cambios de Ctx.</span><span class="m-value">${ctxCount}</span></div>
+    <div class="metric">
+      <span class="m-label">Espera Prom.</span>
+      <span class="m-value">${avgWait} ms</span>
+    </div>
+    <div class="metric">
+      <span class="m-label">Retorno Prom.</span>
+      <span class="m-value">${avgTA} ms</span>
+    </div>
+    <div class="metric">
+      <span class="m-label">Respuesta Prom.</span>
+      <span class="m-value">${avgResp} ms</span>
+    </div>
+    <div class="metric">
+      <span class="m-label">Cambios de Ctx.</span>
+      <span class="m-value">${ctxCount}</span>
+    </div>
+    <div class="metric metric-efficiency ${effClass}">
+      <span class="m-label">Eficiencia (η)</span>
+      <span class="m-value">${efficiency.efficiency.toFixed(2)}%</span>
+      <span class="m-detail">${efficiency.colorTime}ms útil / ${efficiency.totalTime}ms total</span>
+    </div>
   `;
 }
 
-// ─── Main ──────────────────────────────────────────────────────────────────
+
+/* ── 4.6  Motor principal: simulate() ──────────────────────────── */
+
+/**
+ * Función principal del módulo scheduler.
+ * Lee la configuración, ejecuta el algoritmo seleccionado,
+ * calcula métricas + eficiencia, y renderiza todo.
+ */
 function simulate() {
-  // Guard: verificar que los elementos del módulo existen
   if (!$('proc-tbody') || !$('gantt-rows')) {
     console.error('simulate(): elementos del DOM no encontrados');
     return;
@@ -592,11 +704,13 @@ function simulate() {
   if (!procs.length) { alert('Genera la tabla primero.'); return; }
 
   const ctxTime = parseInt($('ctx-time').value) || 0;
-  const quantum  = parseInt($('quantum').value)  || 2;
-  const algo     = algoSel();
+  const quantum = parseInt($('quantum').value)  || 2;
+  const algo    = algoSel();
 
+  // Reset color map
   Object.keys(pidMap).forEach(k => delete pidMap[k]);
 
+  // Ejecutar algoritmo
   let result;
   if      (algo === 'fcfs')     result = runFCFS(procs, ctxTime);
   else if (algo === 'sjf')      result = runSJF(procs, ctxTime);
@@ -604,8 +718,10 @@ function simulate() {
   else if (algo === 'priority') result = runPriority(procs, ctxTime);
 
   const { timeline, log } = result;
-  const metrics = computeMetrics(procs, timeline);
+  const metrics    = computeMetrics(procs, timeline);
+  const efficiency = computeEfficiency(timeline);
 
+  // Log de resumen
   log.push(`<span class="sep">──────────────────────────────────────────────────────</span>`);
   log.push(`<span class="hdr">RESUMEN POR PROCESO</span>`);
   metrics.forEach(m => {
@@ -616,40 +732,50 @@ function simulate() {
     );
   });
 
-  // mapa pid → proceso para tooltips y etiquetas
+  // Log de eficiencia
+  log.push(`<span class="sep">──────────────────────────────────────────────────────</span>`);
+  log.push(`<span class="hdr">EFICIENCIA DEL CPU</span>`);
+  log.push(`<span class="run-line">  Tiempo útil (bloques de color): ${efficiency.colorTime} ms</span>`);
+  log.push(`<span class="run-line">  Tiempo total (incluyendo idle/ctx): ${efficiency.totalTime} ms</span>`);
+  log.push(`<span class="ctx-line">  η = ${efficiency.colorTime} / ${efficiency.totalTime} × 100 = ${efficiency.efficiency.toFixed(2)}%</span>`);
+
+  // Mapa pid → proceso para tooltips
   const procMap = {};
   procs.forEach(p => { procMap[p.pid] = p; });
+
+  // Renderizar todo
   renderGantt(timeline, procMap);
   renderResults(metrics);
-  renderMetrics(metrics, log);
+  renderMetrics(metrics, log, efficiency);
   $('log-box').innerHTML = log.join('<br>');
 
   ['gantt-panel', 'results-panel', 'log-panel'].forEach(id => $(id).classList.remove('hidden'));
 }
 
-// ─── Init ──────────────────────────────────────────────────────────────────
+
+/* ================================================================
+   §5  INICIALIZACIÓN
+   ================================================================ */
+
 document.addEventListener('DOMContentLoaded', () => {
-  // Inicializar tema
   initTheme();
-
-  // Mostrar pantalla de inicio al cargar
   showScreen('screen-home');
-
-  // Listener del selector de algoritmo (quantum siempre visible)
-  // No se necesita ocultar/mostrar quantum-field
 });
 
-/* ============================================================
-   MÓDULO ENVEJECIMIENTO — SJF Predictivo (Aging)
-   Fórmula: τ(n+1) = α · t(n) + (1 − α) · τ(n)
-   ============================================================ */
 
-/** Construye la tabla de entrada de tiempos reales */
+/* ================================================================
+   §6  MÓDULO 2 — ENVEJECIMIENTO (SJF Predictivo / Aging)
+   Fórmula: τ(n+1) = α · t(n) + (1 − α) · τ(n)
+   ================================================================ */
+
+/**
+ * Genera la tabla de entrada con tiempos reales aleatorios.
+ */
 function agingBuildTable() {
   const n     = parseInt($('ag-n').value)    || 5;
   const tau0  = parseFloat($('ag-tau0').value) || 45;
   const tbody = $('ag-tbody');
-  if (!tbody) return;   // Guard: módulo no montado aún
+  if (!tbody) return;
   tbody.innerHTML = '';
 
   for (let i = 1; i <= n; i++) {
@@ -665,7 +791,7 @@ function agingBuildTable() {
   agingClear();
 }
 
-/** Limpia resultados del módulo aging */
+/** Oculta resultados del módulo aging. */
 function agingClear() {
   ['ag-results-panel','ag-chart-panel'].forEach(id => {
     const el = $(id);
@@ -673,7 +799,10 @@ function agingClear() {
   });
 }
 
-/** Ejecuta la simulación de envejecimiento y renderiza tabla + gráfico */
+/**
+ * Ejecuta la simulación de envejecimiento, calcula predicciones,
+ * renderiza tabla de resultados, métricas y gráfico.
+ */
 function agingSimulate() {
   const alpha = parseFloat($('ag-alpha').value);
   const tau0  = parseFloat($('ag-tau0').value);
@@ -686,25 +815,20 @@ function agingSimulate() {
 
   const tReals = rows.map(r => parseFloat(r.querySelector('.ag-real-input').value) || 0);
 
-  // Calcular secuencia de predicciones
-  // τ(1) = tau0 (predicción inicial dada)
-  // Para n=1: τ(2) = α·t(1) + (1-α)·τ(1)
-  // Para n=2: τ(3) = α·t(2) + (1-α)·τ(2)  etc.
-  const taus = [tau0]; // taus[0] = τ(1), taus[1] = τ(2), ...
+  // Secuencia de predicciones: τ(1) = tau0, τ(n+1) = α·t(n) + (1-α)·τ(n)
+  const taus = [tau0];
   for (let i = 0; i < tReals.length; i++) {
-    const next = alpha * tReals[i] + (1 - alpha) * taus[i];
-    taus.push(round4(next));
+    taus.push(round4(alpha * tReals[i] + (1 - alpha) * taus[i]));
   }
 
-  // Render tabla de resultados
+  // Tabla de resultados
   const tbody = $('ag-results-tbody');
   tbody.innerHTML = '';
 
   tReals.forEach((t, i) => {
-    const tauN     = taus[i];       // predicción usada en esta ejecución
-    const tauNext  = taus[i + 1];   // nueva predicción calculada
-    const calcStr  = `${alpha} × ${t} + ${round4(1 - alpha)} × ${tauN} = ${round4(alpha * t)} + ${round4((1 - alpha) * tauN)}`;
-    const isLast   = i === tReals.length - 1;
+    const tauN    = taus[i];
+    const tauNext = taus[i + 1];
+    const calcStr = `${alpha} × ${t} + ${round4(1 - alpha)} × ${tauN} = ${round4(alpha * t)} + ${round4((1 - alpha) * tauN)}`;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -717,7 +841,7 @@ function agingSimulate() {
     tbody.appendChild(tr);
   });
 
-  // Fila extra: "próxima ejecución" — solo muestra la predicción disponible
+  // Fila de próxima predicción
   const trNext = document.createElement('tr');
   trNext.className = 'ag-next-row';
   trNext.innerHTML = `
@@ -729,32 +853,33 @@ function agingSimulate() {
   `;
   tbody.appendChild(trNext);
 
-  // Métricas
+  // Métricas de error
   const errors = tReals.map((t, i) => Math.abs(t - taus[i]));
   const mae    = round4(errors.reduce((s, e) => s + e, 0) / errors.length);
   const rmse   = round4(Math.sqrt(errors.reduce((s, e) => s + e * e, 0) / errors.length));
-  const finalPred = taus[tReals.length];
 
   $('ag-metrics-bar').innerHTML = `
     <div class="metric"><span class="m-label">α utilizado</span><span class="m-value">${alpha}</span></div>
     <div class="metric"><span class="m-label">τ₁ inicial</span><span class="m-value">${tau0} ms</span></div>
-    <div class="metric"><span class="m-label">Próxima predicción</span><span class="m-value">${finalPred} ms</span></div>
+    <div class="metric"><span class="m-label">Próxima predicción</span><span class="m-value">${taus[tReals.length]} ms</span></div>
     <div class="metric"><span class="m-label">Error Absoluto Medio</span><span class="m-value">${mae} ms</span></div>
     <div class="metric"><span class="m-label">RMSE</span><span class="m-value">${rmse} ms</span></div>
   `;
 
   ['ag-results-panel','ag-chart-panel'].forEach(id => $(id).classList.remove('hidden'));
-
-  // Render gráfico
   agingRenderChart(tReals, taus, alpha);
 }
 
-/** Dibuja el gráfico de líneas en el canvas */
+/**
+ * Dibuja el gráfico de líneas comparando tiempo real vs predicción.
+ * @param {Array}  tReals - Tiempos reales t(n).
+ * @param {Array}  taus   - Predicciones τ(n).
+ * @param {number} alpha  - Valor de α usado.
+ */
 function agingRenderChart(tReals, taus, alpha) {
   const canvas = $('ag-canvas');
   const ctx    = canvas.getContext('2d');
 
-  // Ajustar resolución para pantallas HiDPI
   const dpr = window.devicePixelRatio || 1;
   const W   = canvas.offsetWidth  || 800;
   const H   = 280;
@@ -763,28 +888,25 @@ function agingRenderChart(tReals, taus, alpha) {
   canvas.style.width  = W + 'px';
   canvas.style.height = H + 'px';
   ctx.scale(dpr, dpr);
-
   ctx.clearRect(0, 0, W, H);
 
   const PAD = { top: 24, right: 24, bottom: 40, left: 52 };
-  const cW   = W - PAD.left - PAD.right;
-  const cH   = H - PAD.top  - PAD.bottom;
-  const n    = tReals.length;
+  const cW  = W - PAD.left - PAD.right;
+  const cH  = H - PAD.top  - PAD.bottom;
+  const n   = tReals.length;
 
-  // Dominio X: ejecuciones 1..n
-  // Dominio Y: min/max de todos los valores
   const allVals = [...tReals, ...taus];
   const yMin = Math.floor(Math.min(...allVals) * 0.85);
   const yMax = Math.ceil (Math.max(...allVals) * 1.10);
 
-  const xScale = i  => PAD.left + (i / n) * cW;
-  const yScale = v  => PAD.top  + cH - ((v - yMin) / (yMax - yMin)) * cH;
+  const xScale = i => PAD.left + (i / n) * cW;
+  const yScale = v => PAD.top  + cH - ((v - yMin) / (yMax - yMin)) * cH;
 
-  // ── Fondo del área ──
+  // Fondo
   ctx.fillStyle = '#1a1f1e';
   ctx.fillRect(0, 0, W, H);
 
-  // ── Cuadrícula ──
+  // Cuadrícula
   ctx.strokeStyle = 'rgba(108,189,181,0.1)';
   ctx.lineWidth   = 1;
   const yTicks = 5;
@@ -798,7 +920,7 @@ function agingRenderChart(tReals, taus, alpha) {
     ctx.fillText(round4(v), PAD.left - 6, y + 3);
   }
 
-  // ── Ejes ──
+  // Ejes
   ctx.strokeStyle = 'rgba(108,189,181,0.3)';
   ctx.lineWidth   = 1;
   ctx.beginPath();
@@ -807,7 +929,7 @@ function agingRenderChart(tReals, taus, alpha) {
   ctx.lineTo(PAD.left + cW, PAD.top + cH);
   ctx.stroke();
 
-  // ── Labels eje X ──
+  // Labels eje X
   ctx.fillStyle = 'rgba(108,189,181,0.5)';
   ctx.font = '10px Courier New';
   ctx.textAlign = 'center';
@@ -815,7 +937,7 @@ function agingRenderChart(tReals, taus, alpha) {
     ctx.fillText(`n=${i}`, xScale(i - 0.5), PAD.top + cH + 16);
   }
 
-  // ── Línea de tiempo real t(n) ──
+  // Línea de tiempo real t(n)
   ctx.strokeStyle = '#6CBDB5';
   ctx.lineWidth   = 2;
   ctx.lineJoin    = 'round';
@@ -841,7 +963,7 @@ function agingRenderChart(tReals, taus, alpha) {
     ctx.fillText(t, x, y - 9);
   });
 
-  // ── Línea de predicción τ(n) — usamos taus[0..n-1] alineados con los t(n) ──
+  // Línea de predicción τ(n) (dashed)
   ctx.strokeStyle = '#E3DFBA';
   ctx.lineWidth   = 2;
   ctx.setLineDash([5, 3]);
@@ -868,7 +990,7 @@ function agingRenderChart(tReals, taus, alpha) {
     ctx.fillText(taus[i], x, y + 16);
   });
 
-  // ── Punto de próxima predicción (fuera del rango real) ──
+  // Punto de próxima predicción
   const xFut = xScale(n + 0.5);
   if (xFut < PAD.left + cW + 20) {
     const yFut = yScale(taus[n]);
@@ -887,7 +1009,7 @@ function agingRenderChart(tReals, taus, alpha) {
     ctx.fillText(`n=${n+1}`, xFut, PAD.top + cH + 16);
   }
 
-  // ── Título del eje Y ──
+  // Título eje Y
   ctx.save();
   ctx.translate(12, PAD.top + cH / 2);
   ctx.rotate(-Math.PI / 2);
@@ -898,6 +1020,148 @@ function agingRenderChart(tReals, taus, alpha) {
   ctx.restore();
 }
 
-function round4(v) { return Math.round(v * 10000) / 10000; }
 
-// La tabla de aging se inicializa al abrir el módulo (ver openModule)
+/* ================================================================
+   §7  MÓDULO 3 — EFICIENCIA Y SOBRECARGA
+   Fórmula: η = T_útil / (T_útil + S) × 100
+   ================================================================ */
+
+/** Inicializa el módulo de sobrecarga (oculta paneles). */
+function overloadBuildTable() {
+  $('ov-results-panel').classList.add('hidden');
+  $('ov-chart-panel').classList.add('hidden');
+}
+
+/**
+ * Calcula y renderiza la tabla de eficiencia para distintos casos de Quantum.
+ * Compara Q = ∞, Q > T, Q = T, S < Q < T, Q = S, Q → 0.
+ */
+function overloadSimulate() {
+  const T = parseFloat($('ov-t').value);
+  const S = parseFloat($('ov-s').value);
+
+  if (isNaN(T) || T <= 0 || isNaN(S) || S <= 0) {
+    alert('T y S deben ser valores positivos.'); return;
+  }
+
+  // Limpiar tabla
+  const tbody = $('ov-results-tbody');
+  tbody.innerHTML = '';
+
+  // Definición de los casos del ejercicio
+  const casos = [
+    { label: 'Q = ∞',      val: Infinity,   desc: 'El proceso termina su ráfaga T siempre.' },
+    { label: 'Q > T',      val: T * 1.5,    desc: 'Quantum mayor a la ráfaga (Q=1.5T).' },
+    { label: 'Q = T',      val: T,          desc: 'Quantum igual a la ráfaga.' },
+    { label: 'S < Q < T',  val: (S + T) / 2, desc: 'Quantum intermedio.' },
+    { label: 'Q = S',      val: S,          desc: 'Sobrecarga igual al trabajo útil.' },
+    { label: 'Q → 0',      val: 0.1,        desc: 'Quantum extremadamente pequeño.' }
+  ];
+
+  const dataGrafico = [];
+
+  casos.forEach(caso => {
+    let tUtil, eficiencia, formula;
+    const Q = caso.val;
+
+    if (Q >= T) {
+      tUtil = T;
+      formula = `T / (T + S) = ${T} / (${T} + ${S})`;
+    } else {
+      tUtil = Q;
+      formula = `Q / (Q + S) = ${Q} / (${Q} + ${S})`;
+    }
+
+    eficiencia = (tUtil / (tUtil + S)) * 100;
+    dataGrafico.push({ x: caso.label, y: eficiencia, q: Q });
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="pid-cell" style="color:var(--teal)">${caso.label}</td>
+      <td>${Q === Infinity ? '∞' : Q.toFixed(1)} ms</td>
+      <td>${tUtil.toFixed(1)} ms</td>
+      <td class="ag-calc-cell">${formula}</td>
+      <td class="ag-pred-cell" style="color:${eficiencia < 50 ? 'var(--red, #ff5555)' : 'var(--teal)'}">
+        ${eficiencia.toFixed(2)}%
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  $('ov-results-panel').classList.remove('hidden');
+  $('ov-chart-panel').classList.remove('hidden');
+  overloadRenderChart(dataGrafico, T, S);
+}
+
+/**
+ * Dibuja un gráfico de barras comparativo de eficiencia.
+ * @param {Array}  data - Datos [{x, y, q}].
+ * @param {number} T    - Tiempo de ráfaga.
+ * @param {number} S    - Tiempo de sobrecarga.
+ */
+function overloadRenderChart(data, T, S) {
+  const canvas = $('ov-canvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth || 800;
+  const H = 280;
+
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+
+  ctx.fillStyle = '#1a1f1e';
+  ctx.fillRect(0, 0, W, H);
+
+  const PAD = { top: 40, right: 30, bottom: 50, left: 60 };
+  const cW = W - PAD.left - PAD.right;
+  const cH = H - PAD.top - PAD.bottom;
+
+  // Ejes
+  ctx.strokeStyle = 'rgba(108,189,181,0.3)';
+  ctx.beginPath();
+  ctx.moveTo(PAD.left, PAD.top);
+  ctx.lineTo(PAD.left, PAD.top + cH);
+  ctx.lineTo(PAD.left + cW, PAD.top + cH);
+  ctx.stroke();
+
+  // Barras
+  const barW = (cW / data.length) * 0.6;
+  const gap  = (cW / data.length) * 0.4;
+
+  data.forEach((d, i) => {
+    const x = PAD.left + i * (barW + gap) + gap / 2;
+    const h = (d.y / 100) * cH;
+    const y = PAD.top + cH - h;
+
+    // Degradado según eficiencia
+    const grad = ctx.createLinearGradient(x, y, x, PAD.top + cH);
+    grad.addColorStop(0, d.y > 50 ? '#6CBDB5' : '#ff5555');
+    grad.addColorStop(1, '#1a1f1e');
+
+    ctx.fillStyle = grad;
+    ctx.fillRect(x, y, barW, h);
+
+    // Porcentaje encima
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText(d.y.toFixed(1) + '%', x + barW / 2, y - 10);
+
+    // Labels X
+    ctx.fillStyle = 'rgba(108,189,181,0.7)';
+    ctx.fillText(d.x, x + barW / 2, PAD.top + cH + 20);
+  });
+
+  // Título eje Y
+  ctx.save();
+  ctx.translate(20, PAD.top + cH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillStyle = 'rgba(108,189,181,0.7)';
+  ctx.font = '10px Courier New';
+  ctx.textAlign = 'center';
+  ctx.fillText('EFICIENCIA %', 0, 0);
+  ctx.restore();
+}

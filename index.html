@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CPU SIM — Simulador de Planificación</title>
+  <meta name="description" content="Simulador interactivo de algoritmos de planificación de procesos: FCFS, SJF, Round Robin, Prioridad, Envejecimiento y Eficiencia de CPU.">
   <link rel="stylesheet" href="styles.css">
   <!-- Anti-flash: aplicar tema guardado antes de renderizar -->
   <script>
@@ -38,7 +39,7 @@
   <div class="home-hero">
     <div class="home-hero-bg"></div>
     <div class="home-hero-content">
-      <p class="home-sub">Análisis Numérico · UCASAL · Salta · 2026</p>
+      <p class="home-sub">Sistemas Operativos · UCASAL · Salta · 2026</p>
       <h2 class="home-title">Seleccioná un módulo</h2>
       <p class="home-desc">Elegí el método que querés simular.<br>Cada módulo es independiente y tiene sus propias herramientas.</p>
     </div>
@@ -57,6 +58,7 @@
         <li>SJF</li>
         <li>Round Robin</li>
         <li>Prioridad</li>
+        <li>Eficiencia η</li>
       </ul>
       <span class="home-card-cta">Abrir módulo →</span>
     </div>
@@ -75,13 +77,18 @@
       <span class="home-card-cta">Abrir módulo →</span>
     </div>
 
-    <!-- Slot para futuro módulo -->
-    <div class="home-card home-card-soon">
-      <div class="home-card-icon">🔒</div>
+    <!-- Módulo 3: Eficiencia y Sobrecarga -->
+    <div class="home-card" onclick="openModule('overload')">
+      <div class="home-card-icon">⏳</div>
       <div class="home-card-num">03</div>
-      <h3>Próximamente</h3>
-      <p>Nuevo módulo en desarrollo. Será agregado en futuras versiones del simulador.</p>
-      <span class="home-card-cta home-card-cta-disabled">En desarrollo</span>
+      <h3>Eficiencia y Sobrecarga</h3>
+      <p>Analizá cómo la relación entre quantum y sobrecarga afecta la eficiencia del CPU en distintos escenarios.</p>
+      <ul class="home-card-tags">
+        <li>η = T / (T + S)</li>
+        <li>6 escenarios</li>
+        <li>Gráfico de barras</li>
+      </ul>
+      <span class="home-card-cta">Abrir módulo →</span>
     </div>
 
   </div>
@@ -275,11 +282,75 @@
   </div><!-- /aging-container -->
 </div><!-- /screen-aging -->
 
-<footer class="footer">
-  <span>By NumérikaAI · UCASAL · Salta</span>
-  <span>Análisis Numérico · 2026</span>
-</footer>
+<!-- ══════════════════════════════════════════════════
+     MÓDULO 3: EFICIENCIA Y SOBRECARGA
+══════════════════════════════════════════════════ -->
+<div id="screen-overload" class="screen hidden">
 
-<script src="scheduler.js"></script>
+  <div class="aging-hero">
+    <span class="aging-tag">MÓDULO 03</span>
+    <h2>Eficiencia y Sobrecarga del CPU</h2>
+    <p>Analizá la eficiencia del procesador según la relación entre el <strong>quantum</strong> y el <strong>tiempo de sobrecarga</strong>.<br>
+       Fórmula: <code>η = T_útil / (T_útil + S) × 100</code></p>
+  </div>
+
+  <div class="aging-container">
+
+    <!-- Parámetros -->
+    <div class="panel">
+      <div class="panel-header">Parámetros de Entrada</div>
+      <div class="panel-body">
+        <div class="controls-row">
+          <div class="field">
+            <label>T — Ráfaga (ms)</label>
+            <input type="number" id="ov-t" min="1" step="1" value="20">
+          </div>
+          <div class="field">
+            <label>S — Sobrecarga (ms)</label>
+            <input type="number" id="ov-s" min="0.1" step="0.1" value="2">
+          </div>
+          <button class="primary" onclick="overloadSimulate()">▶ Calcular</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de resultados -->
+    <div class="panel hidden" id="ov-results-panel">
+      <div class="panel-header">Eficiencia por Escenario</div>
+      <div class="panel-body" style="padding:0">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Caso</th>
+              <th>Quantum (Q)</th>
+              <th>T_útil</th>
+              <th>Cálculo</th>
+              <th>Eficiencia (η)</th>
+            </tr>
+          </thead>
+          <tbody id="ov-results-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Gráfico de barras -->
+    <div class="panel hidden" id="ov-chart-panel">
+      <div class="panel-header">Visualización — Eficiencia vs Quantum</div>
+      <div class="panel-body">
+        <div class="ag-chart-wrap">
+          <canvas id="ov-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /aging-container -->
+</div><!-- /screen-overload -->
+
+  <footer class="footer">
+    <span>By NumérikaAI · UCASAL · Salta</span>
+    <span>Sistemas Operativos · 2026</span>
+  </footer>
+
+  <script src="Scheduler.js"></script>
 </body>
 </html>
