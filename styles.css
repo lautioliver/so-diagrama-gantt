@@ -938,7 +938,151 @@ tbody td input[type=number]:focus {
 
 
 /* ================================================================
-   §13  OVERRIDES POR TEMA — Light mode
+   §13  MÓDULO 4 — RESOLUCIÓN DE EJERCICIOS
+   ================================================================ */
+
+.ex-presets-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.ex-preset-btn { 
+  display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+  background: var(--surface2); border: 1px solid var(--border);
+  padding: 10px 14px; border-radius: 6px; cursor: pointer; transition: all 0.15s;
+  text-transform: none; font-family: var(--sans); height: auto;
+}
+.ex-preset-btn:hover { background: var(--card-hover); border-color: var(--teal); box-shadow: 0 4px 12px rgba(108,189,181,0.08); }
+.ex-preset-num { font-family: var(--mono); font-size: 11px; font-weight: bold; color: var(--teal); letter-spacing: 0.5px; }
+.ex-preset-desc { font-size: 12px; color: var(--text); }
+
+.ex-compare-grid {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr;
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.ex-compare-header {
+  background: var(--surface2);
+  padding: 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: bold;
+  color: var(--muted);
+  text-transform: uppercase;
+  text-align: center;
+}
+.ex-compare-header:first-child { text-align: left; }
+.ex-compare-label {
+  background: var(--surface);
+  padding: 10px;
+  font-size: 13px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+}
+.ex-compare-val {
+  background: var(--surface);
+  padding: 10px;
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: bold;
+  color: var(--text);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ex-better { color: var(--teal); background: rgba(108,189,181,0.05); }
+.ex-worse { color: #ff6b6b; } /* color rojizo suave */
+
+.ex-detail-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 12px;
+}
+.ex-detail-block {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 12px;
+}
+.ex-detail-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.ex-detail-formula {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--teal-lt);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+.ex-detail-calc {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+}
+.ex-detail-calc strong { color: var(--cream); font-size: 14px; }
+
+.ex-quantum-note {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ex-q-badge {
+  font-family: var(--mono);
+  font-size: 11px;
+  background: var(--tag-bg);
+  color: var(--teal);
+  padding: 2px 6px;
+  border-radius: 3px;
+  border: 1px solid var(--tag-border);
+}
+
+.ex-th-group { background: var(--surface2); color: var(--teal); border-bottom: none; }
+.ex-th-group-2 { color: var(--cream); }
+.ex-col-sep { border-left: 2px solid var(--border) !important; }
+
+/* ── Fórmulas tipo LaTeX (Módulo 4) ── */
+.math-block {
+  font-family: 'Times New Roman', Cambria, 'MathJax_Math', serif;
+  font-size: 17px;
+  color: var(--cream);
+  background: var(--surface2);
+  padding: 8px 16px;
+  border-radius: 4px;
+  border-left: 2px solid var(--teal);
+  margin-top: 6px;
+  display: inline-block;
+  letter-spacing: 0.5px;
+}
+.math-var { font-style: italic; }
+.math-sub { font-size: 12px; vertical-align: sub; font-style: italic; margin-left: 1px; }
+.math-frac {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  vertical-align: middle;
+  margin: 0 6px;
+  line-height: 1.2;
+}
+.math-num {
+  padding: 0 6px 2px;
+  border-bottom: 1px solid var(--cream);
+}
+.math-den {
+  padding: 2px 6px 0;
+}
+
+/* ================================================================
+   §14  OVERRIDES POR TEMA — Light mode
    ================================================================ */
 
 html[data-theme="light"] .log-box {
@@ -988,9 +1132,11 @@ html[data-theme="light"] .legend { background: var(--surface); }
 html[data-theme="light"] tbody tr:nth-child(odd)  { background: var(--surface); }
 html[data-theme="light"] tbody tr:nth-child(even) { background: var(--surface2); }
 
+html[data-theme="light"] .math-block { background: var(--border); color: var(--dark); border-left-color: var(--teal); }
+html[data-theme="light"] .math-num { border-bottom-color: var(--dark); }
 
 /* ================================================================
-   §14  SCROLLBAR
+   §15  SCROLLBAR
    ================================================================ */
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }

@@ -91,6 +91,21 @@
       <span class="home-card-cta">Abrir módulo →</span>
     </div>
 
+    <!-- Módulo 4: Resolución de Ejercicios -->
+    <div class="home-card" onclick="openModule('exercises')">
+      <div class="home-card-icon">📝</div>
+      <div class="home-card-num">04</div>
+      <h3>Resolución de Ejercicios</h3>
+      <p>Resolvé ejercicios de examen con comparación lado a lado de algoritmos. Soporte para tiempos decimales y auto-quantum.</p>
+      <ul class="home-card-tags">
+        <li>FCFS vs SJF</li>
+        <li>Round Robin</li>
+        <li>Comparación</li>
+        <li>Auto-Quantum</li>
+      </ul>
+      <span class="home-card-cta">Abrir módulo →</span>
+    </div>
+
   </div>
 </div><!-- /screen-home -->
 
@@ -345,6 +360,160 @@
 
   </div><!-- /aging-container -->
 </div><!-- /screen-overload -->
+
+<!-- ══════════════════════════════════════════════════
+     MÓDULO 4: RESOLUCIÓN DE EJERCICIOS
+══════════════════════════════════════════════════ -->
+<div id="screen-exercises" class="screen hidden">
+
+  <div class="aging-hero">
+    <span class="aging-tag">MÓDULO 04</span>
+    <h2>Resolución de Ejercicios — Comparación de Algoritmos</h2>
+    <p>Resolvé ejercicios de planificación con <strong>comparación lado a lado</strong> de FCFS y SJF.<br>
+       Soporte para tiempos decimales, nombres personalizados (A, B, C...) y auto-quantum.</p>
+  </div>
+
+  <div class="aging-container">
+
+    <!-- Presets de ejercicios -->
+    <div class="panel">
+      <div class="panel-header">Ejercicios Predefinidos</div>
+      <div class="panel-body">
+        <div class="ex-presets-row">
+          <button class="ex-preset-btn" onclick="exLoadPreset('ex10-np')">
+            <span class="ex-preset-num">Ej. 10a</span>
+            <span class="ex-preset-desc">FCFS vs SJF (No Preemptivo)</span>
+          </button>
+          <button class="ex-preset-btn" onclick="exLoadPreset('ex10-rr')">
+            <span class="ex-preset-num">Ej. 10b</span>
+            <span class="ex-preset-desc">FCFS vs SJF + Round Robin</span>
+          </button>
+          <button class="ex-preset-btn" onclick="exLoadPreset('ex11')">
+            <span class="ex-preset-num">Ej. 11</span>
+            <span class="ex-preset-desc">FCFS + RR (5 trabajos)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Configuración -->
+    <div class="panel">
+      <div class="panel-header">Configuración</div>
+      <div class="panel-body">
+        <div class="controls-row">
+          <div class="field">
+            <label>Nº Trabajos</label>
+            <input type="number" id="ex-num-procs" min="1" max="10" value="3">
+          </div>
+          <div class="field">
+            <label>Modo</label>
+            <select id="ex-mode" onchange="exUpdateModeUI()">
+              <option value="non-preemptive">No Preemptivo (FCFS vs SJF)</option>
+              <option value="round-robin">Round Robin (FCFS+RR vs SJF+RR)</option>
+            </select>
+          </div>
+          <div class="field" id="ex-quantum-field" style="display:none">
+            <label>Quantum (vacío = auto)</label>
+            <input type="number" id="ex-quantum" min="0.1" step="0.1" placeholder="auto">
+          </div>
+          <div class="field">
+            <label>Ctx Switch</label>
+            <input type="number" id="ex-ctx-time" min="0" step="0.1" value="0">
+          </div>
+          <button onclick="exBuildTable()">Generar Tabla</button>
+          <button class="primary" onclick="exSimulate()">▶ Resolver</button>
+          <button class="danger" onclick="exClearResults()">✕ Limpiar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla de trabajos -->
+    <div class="panel">
+      <div class="panel-header">Tabla de Trabajos</div>
+      <div class="panel-body" style="padding:0">
+        <table>
+          <thead>
+            <tr>
+              <th>Trabajo</th>
+              <th>Tiempo de Llegada</th>
+              <th>Tiempo de Servicio</th>
+            </tr>
+          </thead>
+          <tbody id="ex-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Comparación de resultados -->
+    <div class="panel hidden" id="ex-comparison-panel">
+      <div class="panel-header">Comparación de Resultados</div>
+      <div class="panel-body" id="ex-comparison-body"></div>
+    </div>
+
+    <!-- Gantt 1 -->
+    <div class="panel hidden" id="ex-gantt-panel-1">
+      <div class="panel-header" id="ex-gantt-title-1">Diagrama de Gantt — Algoritmo 1</div>
+      <div class="panel-body" style="padding: 28px 14px 10px;">
+        <div class="gantt-scroll-wrapper">
+          <div class="gantt-inner" id="ex-gantt-rows-1"></div>
+        </div>
+      </div>
+      <div class="legend" id="ex-gantt-legend-1"></div>
+    </div>
+
+    <!-- Gantt 2 -->
+    <div class="panel hidden" id="ex-gantt-panel-2">
+      <div class="panel-header" id="ex-gantt-title-2">Diagrama de Gantt — Algoritmo 2</div>
+      <div class="panel-body" style="padding: 28px 14px 10px;">
+        <div class="gantt-scroll-wrapper">
+          <div class="gantt-inner" id="ex-gantt-rows-2"></div>
+        </div>
+      </div>
+      <div class="legend" id="ex-gantt-legend-2"></div>
+    </div>
+
+    <!-- Resultados detallados -->
+    <div class="panel hidden" id="ex-results-panel">
+      <div class="panel-header">Resultados Detallados por Proceso</div>
+      <div class="panel-body" style="padding:0">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th rowspan="2">Trabajo</th>
+              <th rowspan="2">Llegada</th>
+              <th rowspan="2">Servicio</th>
+              <th colspan="4" class="ex-th-group" id="ex-th-algo1">Algoritmo 1</th>
+              <th colspan="4" class="ex-th-group ex-th-group-2" id="ex-th-algo2">Algoritmo 2</th>
+            </tr>
+            <tr>
+              <th>Fin</th><th>Retorno</th><th>Respuesta</th><th>Espera</th>
+              <th class="ex-col-sep">Fin</th><th>Retorno</th><th>Respuesta</th><th>Espera</th>
+            </tr>
+          </thead>
+          <tbody id="ex-results-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="panel hidden" id="ex-log-panel">
+      <div class="panel-header">Traza de Ejecución Completa</div>
+      <div class="panel-body" style="padding:0">
+        <div class="log-box" id="ex-log-box"></div>
+      </div>
+    </div>
+
+    <!-- Fórmulas -->
+    <div class="panel hidden" id="ex-formulas-panel">
+      <div class="panel-header">Fórmulas Computacionales Utilizadas</div>
+      <div class="panel-body">
+        <div id="ex-formulas-box" style="font-family: var(--mono); font-size: 13px; color: var(--text-sec); line-height: 1.6;">
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /aging-container -->
+</div><!-- /screen-exercises -->
 
   <footer class="footer">
     <span>By NumérikaAI · UCASAL · Salta</span>
